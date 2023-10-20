@@ -100,6 +100,8 @@ void loop() {
 
   delay(100);
   i++;
+
+  Serial.println(i);
 }
 
 
@@ -121,15 +123,19 @@ void medicationCharacteristicWritten(BLEDevice central, BLECharacteristic charac
 }
 
 void resetCharacteristicWritten(BLEDevice central, BLECharacteristic characteristic) {
-  if (usbConnected) {
-    Serial.print("Characteristic event, written: ");
-  }
-  if (!characteristic.value()) {
-    if (usbConnected) {
-      Serial.println("Reset");
-    }
-    i = 0;
-  }
+  
+  int value = characteristic.value()[0];
+
+  Serial.print("Reset Detected. Value: ");
+  Serial.println(value);
+  i = 0;
+  
+  // if (!characteristic.value()) {
+  //   // if (usbConnected) {
+  //   Serial.println("Reset");
+  //   // }
+    
+  // }
 
   for (int j = 0; j < 10; j++) {
     digitalWrite(ledPin, HIGH);
