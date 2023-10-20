@@ -172,9 +172,9 @@ char medName[NUM_MEDS][5] = {"CMB0", "XLC0", "LTN0"};
 
 // Drops per Bottle | Num Drops | Baseline | High Threshold | Low Threshold | Max Suspension Time | Pitch Min Limit | Pitch Max Limit | Roll Limit
 double medCal[NUM_MEDS][9] = {
-                  {145,0,92,0.2,0.1,500,82,90,7},  // Combigan
+                  {145,0,92,0.2,0.1,500,84,90,7},  // Combigan
                   {87,0,82,0.3,-0.3,500,82,90,7},  // Xalacom - 45
-                  {145,0,75,0.5,-0.5,500,80,90,8}   // Latanoprost
+                  {145,0,75,0.5,-0.5,500,81,90,7}   // Latanoprost
                   };
 
 // double medCal[NUM_MEDS][8] = {
@@ -299,18 +299,24 @@ void setup() {
     Serial.println("Proximity sensor initialized.");
   }
 
-  if (usbConnected) {
-    Serial.println("Calibrating proximity baseline...");
-  }
-  for(int i = 0; i < PROXIMITY_CALIBRATION_SAMPLES; i++) // Average over five readings taken one second apart.
-  {
-    baseline += proximitySensor.getProximity();    // Read baseline proximity value.
-    delay(0.25*SECOND_TO_MILLISECONDS); // Wait for one second.
-  }
+  // if (usbConnected) {
+  //   Serial.println("Calibrating proximity baseline...");
+  // }
+  // for(int i = 0; i < PROXIMITY_CALIBRATION_SAMPLES; i++) // Average over five readings taken one second apart.
+  // {
+  //   baseline += proximitySensor.getProximity();    // Read baseline proximity value.
+  //   delay(0.25*SECOND_TO_MILLISECONDS); // Wait for one second.
+  // }
 
-  baseline /= PROXIMITY_CALIBRATION_SAMPLES;
-  if (usbConnected) {
-    Serial.println("Baseline proximity value is " + String(baseline) + ".");
+  // baseline /= PROXIMITY_CALIBRATION_SAMPLES;
+  
+  // if (usbConnected) {
+  //   Serial.println("Baseline proximity value is " + String(baseline) + ".");
+  // }
+
+  // Pre-Load Moving Average Values
+  for(int i = 0; i < MOVING_AVG_SAMPLES; i++) {
+
   }
 
   // medSelect = 1;
@@ -430,7 +436,7 @@ void loop() {
     // Serial.println(yMapAvg);
     
     // Serial.println(degreesX);
-    if (degreesXAvg < (90-medCal[medSelect][PITCH_MIN_LIMIT_INDEX]) && degreesXAvg > (90-medCal[medSelect][PITCH_MAX_LIMIT_INDEX]) && yMapAvg < medCal[medSelect][ROLL_MAX_LIMIT_INDEX] && z < 0) {
+    if (degreesXAvg <= (90-medCal[medSelect][PITCH_MIN_LIMIT_INDEX]) && degreesXAvg >= (90-medCal[medSelect][PITCH_MAX_LIMIT_INDEX]) && yMapAvg <= medCal[medSelect][ROLL_MAX_LIMIT_INDEX] && z < 0) {
       // Serial.println("DROP NOW!");
       validAngle = true;
       digitalWrite(ledPin, HIGH);
@@ -529,7 +535,7 @@ void loop() {
 
         medSelectLED();
 
-        newBaseline = 0;
+        // newBaseline = 0;
 
 
       state = IDLE;
