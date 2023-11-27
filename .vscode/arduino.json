@@ -1,0 +1,5 @@
+{
+    "board": "Seeeduino:mbed:xiaonRF52840Sense",
+    "port": "/dev/ttyACM0",
+    "sketch": "xiao_ble_sense_firmware/main/main.ino"
+}

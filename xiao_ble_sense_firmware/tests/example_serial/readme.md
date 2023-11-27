@@ -1,0 +1,3 @@
+# Serial echo
+
+Note that the serial event function doesn't work the same on xiao as on atmel IC. Original sketch is faking a ISR effect, and on xiao the function is not attached to the loop...
