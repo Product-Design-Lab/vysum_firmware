@@ -1,3 +1,4 @@
+#include <Adafruit_TinyUSB.h>
 #define PIN_BUTTON_WHITE D0
 #define PIN_BUTTON_BLUE D1
 
@@ -13,7 +14,7 @@ void setup()
   pinMode(PIN_BUTTON_WHITE, INPUT_PULLUP);
   pinMode(PIN_BUTTON_BLUE, INPUT_PULLUP);
 
-  SerialUSB.begin(9600);
+  Serial.begin(9600);
 }
 
 void loop()
@@ -24,12 +25,12 @@ void loop()
     digitalWrite(LED_RED, LOW);
     digitalWrite(LED_GREEN, LOW);
     digitalWrite(LED_BLUE, LOW);
-    SerialUSB.println("Button white pressed");
+    Serial.println("Button white pressed");
   }
   else if (digitalRead(PIN_BUTTON_BLUE) == LOW)
   {
     digitalWrite(LED_BLUE, LOW);
-    SerialUSB.println("Button blue pressed");
+    Serial.println("Button blue pressed");
   }
   else
   {

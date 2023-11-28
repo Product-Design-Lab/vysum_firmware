@@ -1,3 +1,4 @@
+#include <Adafruit_TinyUSB.h> // for Serial
 String inputString = ""; // a String to hold incoming data
 
 void setup()
@@ -17,13 +18,13 @@ void loop()
 
 void serialEvent()
 {
-  while (SerialUSB.available())
+  while (Serial.available())
   {
-    char inChar = (char)SerialUSB.read();
+    char inChar = (char)Serial.read();
     inputString += inChar;
     if (inChar == '\n')
     {
-      SerialUSB.print(inputString);
+      Serial.print(inputString);
       inputString = "";
     }
   }

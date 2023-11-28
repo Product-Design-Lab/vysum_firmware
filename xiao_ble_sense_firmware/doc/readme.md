@@ -14,3 +14,5 @@ D0 - white button GPIO pull-up
 D1 - blue  button GPIO pull-up
 D2 - motor encoder A
 D3 - motor encoder B
+D9 - motor PWM
+D10 - motor direction
