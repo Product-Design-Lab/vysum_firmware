@@ -44,20 +44,15 @@ void setup()
 void loop()
 {
   unsigned int proxValue = proximitySensor.getProximity();
-  Serial.print("Prox value[");
-  Serial.print(proxValue);
-  
   unsigned int ambientValue = proximitySensor.getAmbient(); 
-  Serial.print("] Ambient light level[");
-  Serial.print(ambientValue);
-
   unsigned int whiteValue = proximitySensor.getWhite(); 
-  Serial.print("] White level[");
-  Serial.print(whiteValue);
-  Serial.print("]");
-
+  Serial.print("prx:");
+  Serial.print(proxValue);
+  // Serial.print(",amb:");
+  // Serial.print(ambientValue);
+  // Serial.print(",wht:");
+  // Serial.print(whiteValue);
   Serial.println();
-
-  delay(10);
+  delay(50);
 }
 

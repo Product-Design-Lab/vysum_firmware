@@ -1,37 +1,46 @@
 #include <Arduino.h>
 #include <Adafruit_TinyUSB.h> // for Serial
+#include "diagnostics.h"
+
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include "semphr.h"
 
 #include "pins.h"
-/*
- * Sketch demonstate mutli-task using Scheduler. Demo create loop2() that
- * run in 'parallel' with loop().
- * - loop() toggle LED_RED every 1 second
- * - loop2() toggle LED_BLUE every half of second
- */
+String mystr="000";
 
-void setup() 
+TaskHandle_t sampleTaskHandle;
+TaskHandle_t sampleTaskHandle2;
+
+void sampleTask(void *pvParameters)
 {
-  // LED_RED & LED_BLUE pin already initialized as an output.
-  
-  // Create loop2() using Scheduler to run in 'parallel' with loop()
-  Scheduler.startLoop(loop2);
+  while (1)
+  {
+    digitalToggle(LED_GREEN); // Toggle LED
+    vTaskDelay(500);          // wait for 500ms
+  }
 }
 
-/**
- * Toggle led1 every 1 second
- */
-void loop() 
+void sampleTask2(void *pvParameters)
 {
-  digitalToggle(LED_RED); // Toggle LED 
-  delay(1000);            // wait for a second
+  int i=0;
+  while (1)
+  {
+    digitalToggle(LED_RED); // Toggle LED
+    serialPrintf("Hello World%d\n", ++i);
+    vTaskDelay(1000);       // wait for 1000ms
+  }
 }
 
-/**
- * Toggle led1 every 0.5 second
- */
-void loop2()
+void setup()
 {
-  digitalToggle(LED_BLUE); // Toggle LED 
-  delay(500);              // wait for a half second  
+  DIAG_init();
+  xTaskCreate(sampleTask, "sampleTask", 128, NULL, 1, &sampleTaskHandle);
+  xTaskCreate(sampleTask2, "sampleTask", 128, NULL, 1, &sampleTaskHandle2);
 }
 
+// main task
+void loop()
+{
+}
