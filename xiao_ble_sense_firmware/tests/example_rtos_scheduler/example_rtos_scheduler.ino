@@ -1,50 +1,49 @@
-/*********************************************************************
- This is an example for our nRF52 based Bluefruit LE modules
-
- Pick one up today in the adafruit shop!
-
- Adafruit invests time and resources providing this open source code,
- please support Adafruit and open-source hardware by purchasing
- products from Adafruit!
-
- MIT license, check LICENSE for more information
- All text above, and the splash screen below must be included in
- any redistribution
-*********************************************************************/
-
-#include <Arduino.h>
 #include <Adafruit_TinyUSB.h> // for Serial
+#include <Arduino.h>
 
-/*
- * Sketch demonstate mutli-task using Scheduler. Demo create loop2() that
- * run in 'parallel' with loop().
- * - loop() toggle LED_RED every 1 second
- * - loop2() toggle LED_BLUE every half of second
- */
+#include "FreeRTOS.h"
+#include "task.h"
 
-void setup() 
+TaskHandle_t task1Handle;
+TaskHandle_t task2Handle;
+
+void setup()
 {
-  // LED_RED & LED_BLUE pin already initialized as an output.
-  
-  // Create loop2() using Scheduler to run in 'parallel' with loop()
-  Scheduler.startLoop(loop2);
+    xTaskCreate(task1loop,     /* Task function. */
+                "Task1",       /* String with name of task. */
+                1000,          /* Stack size in bytes. */
+                NULL,          /* Parameter passed as input of the task */
+                1,             /* Priority of the task. */
+                &task1Handle); /* Task handle. */
+
+    xTaskCreate(task2loop,     /* Task function. */
+                "Task2",       /* String with name of task. */
+                1000,          /* Stack size in bytes. */
+                NULL,          /* Parameter passed as input of the task */
+                1,             /* Priority of the task. */
+                &task2Handle); /* Task handle. */
 }
 
-/**
- * Toggle led1 every 1 second
- */
-void loop() 
+void loop()
 {
-  digitalToggle(LED_RED); // Toggle LED 
-  delay(1000);            // wait for a second
+    digitalToggle(LED_RED); // Toggle LED
+    delay(1000);            // wait for a second
 }
 
-/**
- * Toggle led1 every 0.5 second
- */
-void loop2()
+void task1loop(void *pvParameters)
 {
-  digitalToggle(LED_BLUE); // Toggle LED 
-  delay(500);              // wait for a half second  
+    while (1)
+    {
+        Serial.println("Task 1");
+        delay(1000);
+    }
 }
 
+void task2loop(void *pvParameters)
+{
+    while (1)
+    {
+        Serial.println("Task 2");
+        delay(1000);
+    }
+}
