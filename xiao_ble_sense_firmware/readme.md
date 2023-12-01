@@ -8,3 +8,10 @@ and go to tools->Boards->Board manager, search and install "Seeed nRF52 Baords".
 
 - open each projects in tests and check that they are all able to compile and run.
 
+# how to add arduino appimage to application in ubuntu
+https://forum.arduino.cc/t/arduino-appimage-from-application-on-ubuntu-linux-and-add-to-favorite-menu/1146433
+
+# recommanded vscode packages:
+- hediet.vscode-drawio
+- tomoki1207.pdf
+- 
