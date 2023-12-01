@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "string": "cpp"
+        "string": "cpp",
+        "lsm6ds3.h": "c"
     }
 }
