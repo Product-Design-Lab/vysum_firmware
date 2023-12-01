@@ -1,11 +1,12 @@
 // project includes
 #include "diagnostics.h"
+#include "global_config.h"
 
 // Arduino includes
-#include <Arduino.h>
-#include <Adafruit_TinyUSB.h> // for Serial
 #include "FreeRTOS.h"         // Include FreeRTOS for task creation
 #include "task.h"             // Include task functionality
+#include <Adafruit_TinyUSB.h> // for Serial
+#include <Arduino.h>
 
 // C/C++ includes
 #include <string.h>
@@ -59,6 +60,9 @@ static void process_diag_cmd(String cmd)
 
 static void diagTask(void *pvParameters)
 {
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    const TickType_t xFrequency = pdMS_TO_TICKS(DIAG_LOOP_DELAY_MS);
+
     while (1)
     {
         if (Serial.available() > 0)
@@ -66,22 +70,27 @@ static void diagTask(void *pvParameters)
             String command = Serial.readStringUntil('\n');
             process_diag_cmd(command);
         }
-        vTaskDelay(pdMS_TO_TICKS(100)); // Delay to prevent task from consuming too much CPU time
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
     }
 }
 
 int8_t DIAG_init()
 {
+    // init once only
+    static bool init_done = false;
+    if (init_done)
+        return 0;
+
+    init_done = true;
+
     if (!Serial)
     {
         Serial.begin(115200);
-        while (!Serial)
-        {
-            delay(10);
-        }
     }
+    vTaskDelay(100);
 
-    xTaskCreate(diagTask, "Diagnostic Task", 1024, NULL, 1, &diagTaskHandle);
+    Serial.println("Diagnostic Task Started");
+    xTaskCreate(diagTask, "Diagnostic Task", DAIG_TASK_STACK_SIZE, NULL, DAIG_TASK_PRIORITY, &diagTaskHandle);
     return 0;
 }
 
