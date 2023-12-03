@@ -1,29 +1,24 @@
 #pragma once
 
-#include <stdint.h>
-#include <stdarg.h>
+#include <cstdint>
 
-#ifdef __cplusplus
-extern "C"
+namespace DIAG
 {
-#endif
 
     enum : uint32_t
     {
-        DIAG_OFF = 0,
-        DIAG_MOTOR = 1 << 0,
-        DIAG_IMU = 1 << 1,
+        D_OFF = 0,
+        D_MOTOR = 1 << 0,
+        D_IMU = 1 << 1,
         DIAG_OPT_3 = 1 << 2,
         DIAG_OPT_4 = 1 << 3,
         DIAG_OPT_5 = 1 << 4,
         DIAG_OPT_MAX,
     };
 
-    int8_t DIAG_init();
+    int8_t init();
     int8_t DIAG_deinit();
 
-    uint32_t DIAG_get_opt();
+    uint32_t get_opt();
 
-#ifdef __cplusplus
-}
-#endif
+} // namespace DIAG

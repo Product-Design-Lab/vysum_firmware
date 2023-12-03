@@ -42,7 +42,7 @@ namespace IMU
       // Check if the sensor is held vertically
       is_vertical = (abs(angleAve) < VERTICAL_THRESHOLD_DEGREES);
 
-      if (DIAG_get_opt() == DIAG_IMU)
+      if (DIAG::get_opt() == DIAG::D_IMU)
       {
         Serial.printf("ax:%f, ay:%f, az:%f, angle:%f, ang_ave:%f, verticle:%d\n", ax, ay, az, angle, angleAve, is_vertical);
       }

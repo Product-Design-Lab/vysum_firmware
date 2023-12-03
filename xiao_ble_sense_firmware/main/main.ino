@@ -4,8 +4,8 @@
 
 void setup()
 {
-  DIAG_init();
-  // IMU::init();
+  DIAG::init();
+  IMU::init();
   MotorN20::init();
 }
 

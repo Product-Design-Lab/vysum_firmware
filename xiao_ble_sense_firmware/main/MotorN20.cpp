@@ -99,7 +99,7 @@ namespace MotorN20
                 set_pwm(0);
             }
 
-            if (DIAG_get_opt() & DIAG_MOTOR == true)
+            if (DIAG::get_opt() & DIAG::D_MOTOR == true)
             {
                 run_diagnostics(error, u);
             }
