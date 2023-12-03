@@ -1,26 +1,35 @@
-#include <Arduino.h>
-#include <Adafruit_TinyUSB.h> // for Serial
-
-
 #include "diagnostics.h"
 #include "pose_checker.hpp"
+#include "MotorN20.hpp"
 
 void setup()
 {
-    DIAG_init();
-    IMU::init(0.5f);
+  DIAG_init();
+  // IMU::init();
+  MotorN20::init();
 }
 
-// main task
 void loop()
 {
-    if (IMU::isVertical())
-    {
-        Serial.println("Vertical");
-    }
-    else
-    {
-        Serial.println("Not vertical");
-    }
-    delay(1000);
+  // MotorN20::set_mode(MotorN20::CONTROL_PWM);
+  // MotorN20::set_target_pwm(0.5);
+  // delay(1000);
+
+  // MotorN20::set_target_pwm(0);
+  // delay(1000);
+
+  // MotorN20::set_target_pwm(-0.5);
+  // delay(1000);
+
+  // MotorN20::set_target_pwm(0);
+  // delay(1000);
+
+  MotorN20::set_mode(MotorN20::CONTROL_POSITION);
+  MotorN20::set_current_position(0);
+  
+  MotorN20::set_target_position(1000);
+  delay(5000);
+
+  MotorN20::set_target_position(0);
+  delay(5000);
 }

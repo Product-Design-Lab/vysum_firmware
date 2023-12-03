@@ -10,7 +10,7 @@ void setup()
   pinMode(PIN_MOTOR_DIR, OUTPUT);
   // pinMode(PIN_MOTOR_PWM, OUTPUT);
   digitalWrite(PIN_MOTOR_DIR, HIGH);
-  analogWrite(PIN_MOTOR_PWM, 0);
+  // analogWrite(PIN_MOTOR_PWM, 0);
 
   // Add LED BLUE to PWM1
   // HwPWM1.addPin( LED_BLUE );

@@ -1,76 +1,55 @@
-/*****************************************************************************/
-//  HighLevelExample.ino
-//  Hardware:      Grove - 6-Axis Accelerometer&Gyroscope
-//	Arduino IDE:   Arduino-1.65
-//	Author:	       Lambor
-//	Date: 	       Oct,2015
-//	Version:       v1.0
-//
-//  Modified by:
-//  Data:
-//  Description:
-//
-//	by www.seeedstudio.com
-//
-//  This library is free software; you can redistribute it and/or
-//  modify it under the terms of the GNU Lesser General Public
-//  License as published by the Free Software Foundation; either
-//  version 2.1 of the License, or (at your option) any later version.
-//
-//  This library is distributed in the hope that it will be useful,
-//  but WITHOUT ANY WARRANTY; without even the implied warranty of
-//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-//  Lesser General Public License for more details.
-//
-//  You should have received a copy of the GNU Lesser General Public
-//  License along with this library; if not, write to the Free Software
-//  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-//
-/*******************************************************************************/
+
 
 #include "LSM6DS3.h"
 #include "Wire.h"
+#include "MovingAverageFloat.h"
+
+#define VERTICAL_THRESHOLD_DEGREES 10
 
 //Create a instance of class LSM6DS3
-LSM6DS3 myIMU(I2C_MODE, 0x6A);    //I2C device address 0x6A
+LSM6DS3 myIMU(I2C_MODE, 0x6A);  //I2C device address 0x6A
+MovingAverageFloat<32> filter;
+float ax, ay, az, angle, angle_ave;
+bool is_vertical;
 
 void setup() {
-    // put your setup code here, to run once:
-    Serial.begin(9600);
-    while (!Serial);
-    //Call .begin() to configure the IMUs
-    if (myIMU.begin() != 0) {
-        Serial.println("Device error");
-    } else {
-        Serial.println("Device OK!");
-    }
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  while (!Serial)
+    ;
+  //Call .begin() to configure the IMUs
+  if (myIMU.begin() != 0) {
+    Serial.println("Device error");
+  } else {
+    Serial.println("Device OK!");
+  }
 }
 
 void loop() {
-    //Accelerometer
-    Serial.print("\nAccelerometer:\n");
-    Serial.print(" X1 = ");
-    Serial.println(myIMU.readFloatAccelX(), 4);
-    Serial.print(" Y1 = ");
-    Serial.println(myIMU.readFloatAccelY(), 4);
-    Serial.print(" Z1 = ");
-    Serial.println(myIMU.readFloatAccelZ(), 4);
+  //Accelerometer
+  ax = myIMU.readFloatAccelX();
+  ay = myIMU.readFloatAccelY();
+  az = myIMU.readFloatAccelZ();
 
-    //Gyroscope
-    Serial.print("\nGyroscope:\n");
-    Serial.print(" X1 = ");
-    Serial.println(myIMU.readFloatGyroX(), 4);
-    Serial.print(" Y1 = ");
-    Serial.println(myIMU.readFloatGyroY(), 4);
-    Serial.print(" Z1 = ");
-    Serial.println(myIMU.readFloatGyroZ(), 4);
+  //down direction is x
+  angle = atan2(sqrt(ay * ay + az * az), ax) * 180 / M_PI;
+  angle_ave = filter.add(angle);
 
-    //Thermometer
-    Serial.print("\nThermometer:\n");
-    Serial.print(" Degrees C1 = ");
-    Serial.println(myIMU.readTempC(), 4);
-    Serial.print(" Degrees F1 = ");
-    Serial.println(myIMU.readTempF(), 4);
+    if (angle_ave < VERTICAL_THRESHOLD_DEGREES) {
+    is_vertical = true;
+  }
+  else {
+    is_vertical = false;
+  }
 
-    delay(1000);
+  // Serial.printf("ax:%6.3f, ay:%6.3f, az:%6.3f\n", ax, ay, az);
+  Serial.printf("angle:%f, verticle:%d\n", angle_ave, is_vertical);
+  //Thermometer
+  // Serial.print("\nThermometer:\n");
+  // Serial.print(" Degrees C1 = ");
+  // Serial.println(myIMU.readTempC(), 4);
+  // Serial.print(" Degrees F1 = ");
+  // Serial.println(myIMU.readTempF(), 4);
+  delay(20);
+  // micros();
 }

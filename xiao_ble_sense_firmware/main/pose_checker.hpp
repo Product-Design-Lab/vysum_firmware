@@ -2,8 +2,9 @@
 
 #include <cstdbool>
 
-namespace IMU {
-    void init(float alphaValue = 0.5f);
+namespace IMU
+{
+    void init();
     void deinit();
     bool isVertical();
 }

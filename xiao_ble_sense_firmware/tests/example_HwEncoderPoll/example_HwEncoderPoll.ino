@@ -16,37 +16,26 @@
 #include <Adafruit_TinyUSB.h>  // for Serial
 #include "RotaryEncoder.h"
 
-#define PIN_A D2
-#define PIN_B D3
-HwRotaryEncoder encoder;
+#define PIN_A A2
+#define PIN_B A3
 
 void setup() {
   Serial.begin(115200);
   while (!Serial) delay(10);  // for nrf52840 with native usb
 
-  Serial.println("Bluefruit52 HW Rotary Encoder Callback Example");
-  Serial.println("----------------------------------------------\n");
+  Serial.println("Bluefruit52 HW Rotary Encoder Polling Example");
+  Serial.println("---------------------------------------------\n");
 
   // Initialize Encoder
-  encoder.begin(PIN_A, PIN_B);
-
-  // Set callback
-  encoder.setCallback(encoder_callback);
+  RotaryEncoder.begin(PIN_A, PIN_B);
 
   // Start encoder
-  encoder.start();
+  RotaryEncoder.start();
 }
 
 void loop() {
-  // do nothing
-}
+  int value = RotaryEncoder.readAbs();
+  Serial.println(value);
 
-void encoder_callback(int step) {
-  // Serial.print(step);
-  if (step > 0) {
-
-    Serial.println("Right");
-  } else {
-    Serial.println("Left");
-  }
+  delay(1000);
 }
