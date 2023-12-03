@@ -23,7 +23,7 @@ namespace DIAG
     const char *diag_cmd_off = "d_off";
     const char *diag_cmd_motor = "d_motor";
     const char *diag_cmd_imu = "d_imu";
-    const char *diag_cmd_3 = "d_3";
+    const char *diag_cmd_vcnl = "d_vcnl";
     const char *diag_cmd_4 = "d_4";
     const char *diag_cmd_5 = "d_5";
     const char *diag_cmd_rtos = "d_os";
@@ -46,20 +46,23 @@ namespace DIAG
         const char *cmd_cstr = cmd.c_str();
         if (strstr(cmd_cstr, diag_cmd_off) != NULL)
         {
-            Serial.println("Diagnostic OFF");
+            Serial.println("Diagnose OFF");
             diag_opt = D_OFF;
         }
         else if (strstr(cmd_cstr, diag_cmd_motor) != NULL)
         {
+            Serial.println("Diagnose MOTOR");
             diag_opt |= D_MOTOR;
         }
         else if (strstr(cmd_cstr, diag_cmd_imu) != NULL)
         {
+            Serial.println("Diagnose IMU");
             diag_opt |= D_IMU;
         }
-        else if (strstr(cmd_cstr, diag_cmd_3) != NULL)
+        else if (strstr(cmd_cstr, diag_cmd_vcnl) != NULL)
         {
-            diag_opt |= DIAG_OPT_3;
+            Serial.println("Diagnose VCNL4040");
+            diag_opt |= D_DROP;
         }
         else if (strstr(cmd_cstr, diag_cmd_4) != NULL)
         {
@@ -80,7 +83,7 @@ namespace DIAG
             Serial.printf("D_OFF: %s\n", diag_cmd_off);
             Serial.printf("D_MOTOR: %s\n", diag_cmd_motor);
             Serial.printf("D_IMU: %s\n", diag_cmd_imu);
-            Serial.printf("DIAG_OPT_3: %s\n", diag_cmd_3);
+            Serial.printf("D_DROP: %s\n", diag_cmd_vcnl);
             Serial.printf("DIAG_OPT_4: %s\n", diag_cmd_4);
             Serial.printf("DIAG_OPT_5: %s\n", diag_cmd_5);
         }
@@ -119,7 +122,7 @@ namespace DIAG
         return 0;
     }
 
-    int8_t DIAG_deinit()
+    int8_t deinit()
     {
         if (diagTaskHandle != NULL)
         {

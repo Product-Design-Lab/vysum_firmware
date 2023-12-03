@@ -1,12 +1,14 @@
 #include "diagnostics.h"
 #include "pose_checker.hpp"
 #include "MotorN20.hpp"
+#include "drop_detection.hpp"
 
 void setup()
 {
   DIAG::init();
   IMU::init();
   MotorN20::init();
+  VCNL::init();
 }
 
 void loop()

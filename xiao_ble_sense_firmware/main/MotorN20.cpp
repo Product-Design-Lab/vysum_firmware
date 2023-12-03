@@ -64,9 +64,8 @@ namespace MotorN20
         float error = 0;
         while (1)
         {
-            current_speed = 1.0 * (RotaryEncoder.read()) / MOTOR_LOOP_DELAY_MS;// any read action clears current reading. must read before readAbs()
+            current_speed = 1.0 * (RotaryEncoder.read()) / MOTOR_LOOP_DELAY_MS; // any read action clears current reading. must read before readAbs()
             current_position = RotaryEncoder.readAbs();
-
 
             if (enabled)
             {
@@ -77,7 +76,7 @@ namespace MotorN20
                 else if (control_mode == CONTROL_POSITION)
                 {
                     error = target_position - current_position;
-                    u = Kp * error;// typical errpr:50, Kp:-0.02, u:-1
+                    u = Kp * error; // typical errpr:50, Kp:-0.02, u:-1
                     u = fmin(fmax(u, -1), 1);
                     set_pwm(u);
                 }
@@ -99,7 +98,7 @@ namespace MotorN20
                 set_pwm(0);
             }
 
-            if (DIAG::get_opt() & DIAG::D_MOTOR == true)
+            if ((bool)(DIAG::get_opt() & DIAG::D_MOTOR) == true)
             {
                 run_diagnostics(error, u);
             }

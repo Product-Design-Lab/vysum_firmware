@@ -17,6 +17,11 @@ namespace IMU
   static TaskHandle_t imuTaskHandle;
   static bool is_vertical;
 
+  static void run_diagnostics(const float ax, const float ay, const float az, const float angle, const float angleAve)
+  {
+    Serial.printf("ax:%f, ay:%f, az:%f, angle:%f, ang_ave:%f, verticle:%d\n", ax, ay, az, angle, angleAve, is_vertical);
+  }
+
   static void imuTask(void *pvParameters)
   {
     float ax, ay, az;
@@ -42,13 +47,12 @@ namespace IMU
       // Check if the sensor is held vertically
       is_vertical = (abs(angleAve) < VERTICAL_THRESHOLD_DEGREES);
 
-      if (DIAG::get_opt() == DIAG::D_IMU)
+      if ((bool)(DIAG::get_opt() & DIAG::D_IMU) == true)
       {
-        Serial.printf("ax:%f, ay:%f, az:%f, angle:%f, ang_ave:%f, verticle:%d\n", ax, ay, az, angle, angleAve, is_vertical);
+        run_diagnostics(ax, ay, az, angle, angleAve);
       }
 
       vTaskDelayUntil(&xLastWakeTime, xFrequency);
-      // delay(10);
     }
   }
 
