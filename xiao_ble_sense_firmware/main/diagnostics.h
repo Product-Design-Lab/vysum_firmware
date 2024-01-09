@@ -11,7 +11,7 @@ namespace DIAG
         D_MOTOR = 1 << 0,
         D_IMU = 1 << 1,
         D_DROP = 1 << 2,
-        DIAG_OPT_4 = 1 << 3,
+        D_BUTTON = 1 << 3,
         DIAG_OPT_5 = 1 << 4,
         DIAG_OPT_MAX,
     };

@@ -2,6 +2,8 @@
 #include "pose_checker.hpp"
 #include "MotorN20.hpp"
 #include "drop_detection.hpp"
+#include "Button.hpp"
+
 
 void setup()
 {
@@ -9,6 +11,8 @@ void setup()
   IMU::init();
   MotorN20::init();
   VCNL::init();
+  Button::init();
+
 }
 
 void loop()

@@ -24,7 +24,7 @@ namespace DIAG
     const char *diag_cmd_motor = "d_motor";
     const char *diag_cmd_imu = "d_imu";
     const char *diag_cmd_vcnl = "d_vcnl";
-    const char *diag_cmd_4 = "d_4";
+    const char *diag_cmd_4 = "d_button";
     const char *diag_cmd_5 = "d_5";
     const char *diag_cmd_rtos = "d_os";
 
@@ -66,7 +66,7 @@ namespace DIAG
         }
         else if (strstr(cmd_cstr, diag_cmd_4) != NULL)
         {
-            diag_opt |= DIAG_OPT_4;
+            diag_opt |= D_BUTTON;
         }
         else if (strstr(cmd_cstr, diag_cmd_5) != NULL)
         {
@@ -84,7 +84,7 @@ namespace DIAG
             Serial.printf("D_MOTOR: %s\n", diag_cmd_motor);
             Serial.printf("D_IMU: %s\n", diag_cmd_imu);
             Serial.printf("D_DROP: %s\n", diag_cmd_vcnl);
-            Serial.printf("DIAG_OPT_4: %s\n", diag_cmd_4);
+            Serial.printf("D_BUTTON: %s\n", diag_cmd_4);
             Serial.printf("DIAG_OPT_5: %s\n", diag_cmd_5);
         }
     }
