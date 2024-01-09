@@ -2,26 +2,13 @@
 #include <Arduino.h>
 #include "diagnostics.h"
 #include "pins.h"
+#include "global_config.h"
 
 #include <FreeRTOS.h>
 #include <task.h>
 
 namespace Button
 {
-
-    // Notify values
-    // enum
-    // {
-    //     BUTTON1_RISE_NOTIFY,
-    //     BUTTON1_FALL_NOTIFY,
-    //     BUTTON2_RISE_NOTIFY,
-    //     BUTTON2_FALL_NOTIFY
-    // };
-
-    const uint32_t BUTTON1_RISE_NOTIFY = 1;
-    const uint32_t BUTTON1_FALL_NOTIFY = 2;
-    const uint32_t BUTTON2_RISE_NOTIFY = 3;
-    const uint32_t BUTTON2_FALL_NOTIFY = 4;
     static uint32_t ulNotificationValue = 0;
 
     static TaskHandle_t buttonTaskHandle = NULL;
@@ -38,68 +25,43 @@ namespace Button
 
     static void buttonTask(void *pvParameters)
     {
+        const TickType_t wait_tick = pdMS_TO_TICKS(BUTTON_NOTIFY_WAIT_MS);
 
         while (1)
         {
-            ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-
-            switch (ulNotificationValue)
-            {
-            case BUTTON1_RISE_NOTIFY:
-                Serial.println("Button 1 pressed.");
-                break;
-            case BUTTON1_FALL_NOTIFY:
-                Serial.println("Button 1 released.");
-                break;
-            case BUTTON2_RISE_NOTIFY:
-                Serial.println("Button 2 pressed.");
-                break;
-            case BUTTON2_FALL_NOTIFY:
-                Serial.println("Button 2 released.");
-                break;
-            }
+            ulTaskNotifyTake(pdTRUE, wait_tick);
 
             run_diagnostics();
         }
     }
 
-    void notifyTask(uint32_t notifyValue)
+    static inline void notifyTask(void)
     {
-        if (DIAG::get_opt() & DIAG::D_BUTTON)
-        {
-            ulNotificationValue = notifyValue;
-            BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-            vTaskNotifyGiveFromISR(buttonTaskHandle, &xHigherPriorityTaskWoken);
-            portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-        }
+        // if (DIAG::get_opt() & DIAG::D_BUTTON)
+
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+        vTaskNotifyGiveFromISR(buttonTaskHandle, &xHigherPriorityTaskWoken);
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
     }
 
-    static void buttonWhiteRiseISR()
+    static void buttonWhiteISR()
     {
-        buttonWhiteState.pressCount++;
-        buttonWhiteState.isPressed = true;
-        notifyTask(BUTTON1_RISE_NOTIFY);
+        buttonWhiteState._is_pressed = (bool)(digitalRead(PIN_BUTTON_WHITE) == LOW);
+        detachInterrupt(digitalPinToInterrupt(PIN_BUTTON_WHITE));
+
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+        vTaskNotifyGiveFromISR(buttonTaskHandle, &xHigherPriorityTaskWoken);
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
     }
 
-    static void buttonWhiteFallISR()
+    static void buttonBlueISR()
     {
-        buttonWhiteState.releaseCount++;
-        buttonWhiteState.isPressed = false;
-        notifyTask(BUTTON1_FALL_NOTIFY);
-    }
+        detachInterrupt(digitalPinToInterrupt(PIN_BUTTON_BLUE));
+        buttonBlueState._is_pressed = (bool)(digitalRead(PIN_BUTTON_BLUE) == LOW);
 
-    static void buttonBlueRiseISR()
-    {
-        buttonBlueState.pressCount++;
-        buttonBlueState.isPressed = true;
-        notifyTask(BUTTON2_RISE_NOTIFY);
-    }
-
-    static void buttonBlueFallISR()
-    {
-        buttonBlueState.releaseCount++;
-        buttonBlueState.isPressed = false;
-        notifyTask(BUTTON2_FALL_NOTIFY);
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+        vTaskNotifyGiveFromISR(buttonTaskHandle, &xHigherPriorityTaskWoken);
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
     }
 
     void init()
@@ -108,10 +70,8 @@ namespace Button
         pinMode(PIN_BUTTON_WHITE, INPUT_PULLUP);
         pinMode(PIN_BUTTON_BLUE, INPUT_PULLUP);
 
-        attachInterrupt(digitalPinToInterrupt(PIN_BUTTON_WHITE), buttonWhiteRiseISR, RISING);
-        attachInterrupt(digitalPinToInterrupt(PIN_BUTTON_WHITE), buttonWhiteFallISR, FALLING);
-        attachInterrupt(digitalPinToInterrupt(PIN_BUTTON_BLUE), buttonBlueRiseISR, RISING);
-        attachInterrupt(digitalPinToInterrupt(PIN_BUTTON_BLUE), buttonBlueFallISR, FALLING);
+        attachInterrupt(digitalPinToInterrupt(PIN_BUTTON_WHITE), buttonWhiteISR, RISING);
+        attachInterrupt(digitalPinToInterrupt(PIN_BUTTON_BLUE), buttonBlueISR, RISING);
 
         xTaskCreate(buttonTask, "ButTask", 1000, NULL, 1, &buttonTaskHandle);
     }

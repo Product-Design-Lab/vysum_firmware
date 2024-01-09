@@ -3,12 +3,15 @@
 #include <cstdint>
 #include <cstdbool>
 
-namespace Button {
+namespace Button
+{
 
-    typedef struct {
-        volatile uint32_t pressCount;
-        volatile uint32_t releaseCount;
-        volatile bool isPressed;
+    typedef struct
+    {
+        uint32_t pressCount;
+        uint32_t releaseCount;
+        bool isPressed;
+        volatile _is_pressed;
     } ButtonState_t;
 
     // Initialize buttons
