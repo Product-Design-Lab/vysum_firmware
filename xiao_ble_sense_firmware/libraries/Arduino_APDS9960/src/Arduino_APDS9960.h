@@ -97,17 +97,23 @@ private:
   bool get##name(uint8_t *val) { return read(addr,  val); } \
   bool set##name(uint8_t val)  { return write(addr, val); } \
   size_t read##name(uint8_t *val, uint8_t len) { return readBlock(addr, val, len); }
-  REG(ENABLE,     0x80)
-  REG(ATIME,      0x81)
-  REG(WTIME,      0x83)
-  REG(AILTL,      0x84)
+  REG(ENABLE,     0x80) // The ENABLE register is used to power the device on/off, enable functions and interrupts.
+  REG(ATIME,      0x81) // ADC Integration Time Register controls the internal integration time of ALS/Color analog to digital converters
+  REG(WTIME,      0x83) // Wait Time Register controls the amount of time in a low power mode between Proximity and/or ALS cycles
+  REG(AILTL,      0x84) // ALS Interrupt Threshold Register
   REG(AILTH,      0x85)
   REG(AIHTL,      0x86)
   REG(AIHTH,      0x87)
-  REG(PILT,       0x89)
+  REG(PILT,       0x89) // Proximity Interrupt Threshold Register
   REG(PIHT,       0x8B)
-  REG(PERS,       0x8C)
-  REG(CONFIG1,    0x8D)
+  REG(PERS,       0x8C) // Persistence Register
+  REG(CONFIG1,    0x8D) // The CONFIG1 register sets the wait long time. The register is set to 0x40 at power up.
+  /*
+  Proximity Pulse Count Register (0x8E)
+  The Proximity Pulse Count Register sets Pulse Width Modified current during a Proximity Pulse. The proximity pulse
+  count register bits set the number of pulses to be output on the LDR pin. The Proximity Length register bits set the
+  amount of time the LDR pin is sinking current during a proximity pulse.
+  */
   REG(PPULSE,     0x8E)
   REG(CONTROL,    0x8F)
   REG(CONFIG2,    0x90)
