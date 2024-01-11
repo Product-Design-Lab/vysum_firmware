@@ -51,7 +51,7 @@ bool APDS9960::begin() {
   if (!setENABLE(0x00)) return false;
   if (!setWTIME(0xFF)) return false;
   if (!setGPULSE(0x8F)) return false; // 16us, 16 pulses // default is: 0x40 = 8us, 1 pulse
-  if (!setPPULSE(0x8F)) return false; // 0x8F: 16us, 16 pulses // default is: 0x40 = 8us, 1 pulse
+  if (!setPPULSE(0x8F)) return false; // 16us, 16 pulses // default is: 0x40 = 8us, 1 pulse
   if (!setGestureIntEnable(false)) return false;
   if (!setGestureMode(true)) return false;
   if (!enablePower()) return false;
@@ -269,12 +269,10 @@ size_t APDS9960::readBlock(uint8_t reg, uint8_t *val, unsigned int len) {
 int APDS9960::gestureFIFOAvailable() {
   uint8_t r;
   if (!getGSTATUS(&r)) return -1;
-  if ((r & 0x01) == 0x00) return -2;
+  if ((r & 0x01) == 0x00) return -2;//All FIFO data has been read
   if (!getGFLVL(&r)) return -3;
   return r;
 }
-
-#include "ComTool_Neutree.h"
 
 int APDS9960::handleGesture() {
   const int gestureThreshold = 30;
@@ -288,61 +286,71 @@ int APDS9960::handleGesture() {
 
     for (int i = 0; i+3 < bytes_read; i+=4) {
       uint8_t u,d,l,r;
-      int8_t lr, d_lr;
-      static int8_t lr_last;
       u = fifo_data[i];
       d = fifo_data[i+1];
       l = fifo_data[i+2];
       r = fifo_data[i+3];
-      
-      lr_last = lr;
-      lr = l-r;
-      d_lr = lr - lr_last;
-      // ComToolPlot("u", u);
-      // ComToolPlot("d", d);
-      // ComToolPlot("ud", u-d);
-      ComToolPlot("r", r);
-      ComToolPlot("l", l);
-      ComToolPlot("rl", r-l);
-      // ComToolPlot("d_lr", d_lr);
+      // Serial.print(u);
+      // Serial.print(",");
+      // Serial.print(d);
+      // Serial.print(",");
+      // Serial.print(l);
+      // Serial.print(",");
+      // Serial.println(r);
 
-      // if (u<gestureThreshold && d<gestureThreshold && l<gestureThreshold && r<gestureThreshold) {
-      //   _gestureIn = true;
-      //   if (_gestureDirInX != 0 || _gestureDirInY != 0) {
-      //     int totalX = _gestureDirInX - _gestureDirectionX;
-      //     int totalY = _gestureDirInY - _gestureDirectionY;
-      //     // Serial.print("OUT ");
-      //     // Serial.print(totalX);
-      //     // Serial.print(",");
-      //     // Serial.println(totalY);
-      //     if (totalX < -_gestureSensitivity) { _detectedGesture = GESTURE_LEFT; }
-      //     if (totalX > _gestureSensitivity) { _detectedGesture = GESTURE_RIGHT; }
-      //     if (totalY < -_gestureSensitivity) { _detectedGesture = GESTURE_DOWN; }
-      //     if (totalY > _gestureSensitivity) { _detectedGesture = GESTURE_UP; }
-      //     _gestureDirectionX = 0;
-      //     _gestureDirectionY = 0;
-      //     _gestureDirInX = 0;
-      //     _gestureDirInY = 0;
-      //   }
-      //   continue;
-      // }
+      if (u<gestureThreshold && d<gestureThreshold && l<gestureThreshold && r<gestureThreshold) {
+        _gestureIn = true;
+        if (_gestureDirInX != 0 || _gestureDirInY != 0) {
+          int totalX = _gestureDirInX - _gestureDirectionX;
+          int totalY = _gestureDirInY - _gestureDirectionY;
+          // Serial.print("OUT ");
+          // Serial.print(totalX);
+          // Serial.print(",");
+          // Serial.println(totalY);
+          if (totalX < -_gestureSensitivity) { _detectedGesture = GESTURE_LEFT; }
+          if (totalX > _gestureSensitivity) { _detectedGesture = GESTURE_RIGHT; }
+          if (totalY < -_gestureSensitivity) { _detectedGesture = GESTURE_DOWN; }
+          if (totalY > _gestureSensitivity) { _detectedGesture = GESTURE_UP; }
+          _gestureDirectionX = 0;
+          _gestureDirectionY = 0;
+          _gestureDirInX = 0;
+          _gestureDirInY = 0;
+        }
+        continue;
+      }
 
-      // _gestureDirectionX = r - l;
-      // _gestureDirectionY = u - d;
-      // Serial.printf("r:%d, l:%d, rl:%d\n", r, l, _gestureDirectionX);
-
-      // if (_gestureIn) {
-      //   _gestureIn = false;
-      //   _gestureDirInX = _gestureDirectionX;
-      //   _gestureDirInY = _gestureDirectionY;
-      //   // Serial.print("IN ");
-      //   // Serial.print(_gestureDirInX);
-      //   // Serial.print(",");
-      //   // Serial.print(_gestureDirInY);
-      //   // Serial.print(" ");
-      // }
+      _gestureDirectionX = r - l;
+      _gestureDirectionY = u - d;
+      if (_gestureIn) {
+        _gestureIn = false;
+        _gestureDirInX = _gestureDirectionX;
+        _gestureDirInY = _gestureDirectionY;
+        // Serial.print("IN ");
+        // Serial.print(_gestureDirInX);
+        // Serial.print(",");
+        // Serial.print(_gestureDirInY);
+        // Serial.print(" ");
+      }
     }
   }
+}
+
+int APDS9960::handleGesture(int dataset_count, uint8_t* up, uint8_t* down, uint8_t* left, uint8_t* right)
+{
+  if (dataset_count <= 0) return 0;
+
+  uint8_t fifo_data[128];
+  uint8_t bytes_read = readGFIFO_U(fifo_data, dataset_count * 4);
+  if (bytes_read == 0) return 0;
+
+  for (int i = 0; i+3 < bytes_read; i+=4) {
+    int idx = i/4;
+    up[idx] = fifo_data[i];
+    down[idx] = fifo_data[i+1];
+    left[idx] = fifo_data[i+2];
+    right[idx] = fifo_data[i+3];
+  }
+  return 1;
 }
 
 int APDS9960::gestureAvailable() {
@@ -361,6 +369,28 @@ int APDS9960::gestureAvailable() {
     setGestureMode(false);
   }
   return (_detectedGesture == GESTURE_NONE) ? 0 : 1;
+}
+
+int APDS9960::gestureAvailable(uint8_t* up, uint8_t* down, uint8_t* left, uint8_t* right)
+{
+  if (!_gestureEnabled) enableGesture();
+
+  if (_intPin > -1) {
+    if (digitalRead(_intPin) != LOW) {
+      return 0;
+    }
+  }
+  int dataset_count = gestureFIFOAvailable();
+  if (dataset_count <= 0) {
+    return 0;
+  }
+
+  handleGesture(dataset_count, up, down, left, right);
+  if (_proximityEnabled) {
+    setGestureMode(false);
+  }
+
+  return dataset_count;
 }
 
 int APDS9960::readGesture() {

@@ -17,12 +17,16 @@
 */
 
 #include <Arduino_APDS9960.h>
+#include "ComTool_Neutree.h"
 
-void setup() {
+void setup()
+{
   Serial.begin(9600);
-  while (!Serial);
+  while (!Serial)
+    ;
 
-  if (!APDS.begin()) {
+  if (!APDS.begin())
+  {
     Serial.println("Error initializing APDS-9960 sensor!");
   }
 
@@ -31,35 +35,26 @@ void setup() {
   // (a wrong gesture may be detected). Lower values makes the gesture recognition
   // more accurate but less sensitive (some gestures may be missed).
   // Default is 80
-  //APDS.setGestureSensitivity(80);
+  // APDS.setGestureSensitivity(80);
 
   Serial.println("Detecting gestures ...");
 }
-void loop() {
-  if (APDS.gestureAvailable()) {
-    // a gesture was detected, read and print to Serial Monitor
-    int gesture = APDS.readGesture();
 
-    switch (gesture) {
-      case GESTURE_UP:
-        Serial.println("Detected UP gesture");
-        break;
+uint8_t up[32] = {0};
+uint8_t down[32] = {0};
+uint8_t left[32] = {0};
+uint8_t right[32] = {0};
+uint8_t count = 0;
 
-      case GESTURE_DOWN:
-        Serial.println("Detected DOWN gesture");
-        break;
-
-      case GESTURE_LEFT:
-        Serial.println("Detected LEFT gesture");
-        break;
-
-      case GESTURE_RIGHT:
-        Serial.println("Detected RIGHT gesture");
-        break;
-
-      default:
-        // ignore
-        break;
-    }
+void loop()
+{
+  count = APDS.gestureAvailable((uint8_t*)&up, (uint8_t*)&down, (uint8_t*)&left, (uint8_t*)&right);
+  for(int i=0; i<count; i++){
+    ComToolPlot("up", up[i]);
+    ComToolPlot("down", down[i]);
+    ComToolPlot("left", left[i]);
+    ComToolPlot("right", right[i]);
   }
+
+  delay(20);
 }
