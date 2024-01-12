@@ -335,7 +335,7 @@ int APDS9960::handleGesture() {
   }
 }
 
-int APDS9960::handleGesture(int dataset_count, uint8_t* up, uint8_t* down, uint8_t* left, uint8_t* right)
+int APDS9960::handleGesture(int dataset_count, uint8_t up[32], uint8_t down[32], uint8_t left[32], uint8_t right[32])
 {
   if (dataset_count <= 0) return 0;
 
@@ -371,7 +371,7 @@ int APDS9960::gestureAvailable() {
   return (_detectedGesture == GESTURE_NONE) ? 0 : 1;
 }
 
-int APDS9960::gestureAvailable(uint8_t* up, uint8_t* down, uint8_t* left, uint8_t* right)
+int APDS9960::gestureAvailable(uint8_t up[32], uint8_t down[32], uint8_t left[32], uint8_t right[32])
 {
   if (!_gestureEnabled) enableGesture();
 
