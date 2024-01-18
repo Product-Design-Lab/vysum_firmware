@@ -1,5 +1,5 @@
 #include <Arduino_APDS9960.h>
-#include "ComTool_Neutree.h"
+// #include "ComTool_Neutree.h"
 
 typedef enum
 {
@@ -25,6 +25,13 @@ int drop_count = 0;
 float alpha = 0.005;
 uint8_t count = 0;
 uint8_t trigger_threshold = 5;
+
+
+int drop_count_previous = 0;
+const unsigned long LED_ON_TIME = 200;
+unsigned long led_time = 0;
+boolean led_state = false;
+
 
 void drop_detect_init()
 {
@@ -127,7 +134,9 @@ void drop_detect_update()
         // ComToolPlot("state", drop_detect_state);
     }
     // ComToolPlot("drop_count", drop_count);
-    Serial.printf("drop_detect_state:%d, drop_count:%d\n", drop_detect_state, drop_count);
+    // Serial.printf("drop_detect_state:%d, drop_count:%d\n", drop_detect_state, drop_count);
+    Serial.print("drop_detect_state: "); Serial.print(drop_detect_state); Serial.print(" | ");
+    Serial.print("drop_count: "); Serial.println(drop_count);
 }
 
 void setup()
@@ -137,10 +146,28 @@ void setup()
         ;
 
     drop_detect_init();
+
+    pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void loop()
 {
     drop_detect_update();
+
+    if (drop_count != drop_count_previous) {
+      led_state = true;
+      drop_count_previous = drop_count;
+      led_time = millis();
+    }
+
+    if (led_state) {
+      digitalWrite(LED_BUILTIN, LOW);
+
+      if (millis()-led_time > LED_ON_TIME) {
+        led_state = false;
+      }
+    } else {
+      digitalWrite(LED_BUILTIN, HIGH);
+    }
     // delay(10);
 }
