@@ -1,5 +1,6 @@
+#include <MovingAverage.h>
+
 #include <Arduino_APDS9960.h>
-#include <movingAvg.h> 
 
 // #include "ComTool_Neutree.h"
 
@@ -52,14 +53,14 @@ bool lUpperFlag = 0, lLowerFlag = 0, rUpperFlag = 0, rLowerFlag = 0;
 bool dropFlagA = false, dropFlagB = false;
 
 // Moving Averages
-movingAvg uMovingAvg(MOVING_AVG_SAMPLES);
-movingAvg dMovingAvg(MOVING_AVG_SAMPLES);
-movingAvg lMovingAvg(MOVING_AVG_SAMPLES);
-movingAvg rMovingAvg(MOVING_AVG_SAMPLES);
-movingAvg uDotMovingAvg(DOT_MOVING_AVG_SAMPLES);
-movingAvg dDotMovingAvg(DOT_MOVING_AVG_SAMPLES);
-movingAvg lDotMovingAvg(DOT_MOVING_AVG_SAMPLES);
-movingAvg rDotMovingAvg(DOT_MOVING_AVG_SAMPLES);
+MovingAverage <uint8_t, MOVING_AVG_SAMPLES> uMovingAvg;
+MovingAverage <uint8_t, MOVING_AVG_SAMPLES> dMovingAvg;
+MovingAverage <uint8_t, MOVING_AVG_SAMPLES> lMovingAvg;
+MovingAverage <uint8_t, MOVING_AVG_SAMPLES> rMovingAvg;
+MovingAverage <double, DOT_MOVING_AVG_SAMPLES> uDotMovingAvg;
+MovingAverage <double, DOT_MOVING_AVG_SAMPLES> dDotMovingAvg;
+MovingAverage <double, DOT_MOVING_AVG_SAMPLES> lDotMovingAvg;
+MovingAverage <double, DOT_MOVING_AVG_SAMPLES> rDotMovingAvg;
 
 
 void drop_detect_init()
@@ -93,10 +94,10 @@ void drop_detect_update()
     dMeanPrev = dMean;
     lMeanPrev = lMean;
     rMeanPrev = rMean;
-    uMean = uMovingAvg.reading(u[0]);
-    dMean = dMovingAvg.reading(d[0]);
-    lMean = lMovingAvg.reading(l[0]);
-    rMean = rMovingAvg.reading(r[0]);
+    uMean = uMovingAvg.add(u[0]);
+    dMean = dMovingAvg.add(d[0]);
+    lMean = lMovingAvg.add(l[0]);
+    rMean = rMovingAvg.add(r[0]);
 
     // Serial.print(u[0]); Serial.print(", "); Serial.print(d[0]); Serial.print(", "); Serial.print(l[0]); Serial.print(", "); Serial.println(r[0]);
 
@@ -292,14 +293,14 @@ void setup()
 
     pinMode(LED_BUILTIN, OUTPUT);
 
-    uMovingAvg.begin();
-    dMovingAvg.begin();
-    lMovingAvg.begin();
-    rMovingAvg.begin();
-    uDotMovingAvg.begin();
-    dDotMovingAvg.begin();
-    lDotMovingAvg.begin();
-    rDotMovingAvg.begin();
+    // uMovingAvg.begin();
+    // dMovingAvg.begin();
+    // lMovingAvg.begin();
+    // rMovingAvg.begin();
+    // uDotMovingAvg.begin();
+    // dDotMovingAvg.begin();
+    // lDotMovingAvg.begin();
+    // rDotMovingAvg.begin();
 
     curr_millis = millis();
 }
