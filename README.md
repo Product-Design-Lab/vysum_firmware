@@ -14,10 +14,17 @@ https://forum.arduino.cc/t/arduino-appimage-from-application-on-ubuntu-linux-and
 # recommanded vscode packages:
 - hediet.vscode-drawio
 - tomoki1207.pdf
-- 
+- copliot
+
 
 # enable freertos runtime stat:
 - open FreeRTOSConfig.h in the arduino library directory, 
-e.g. ~/.arduino15/packages/Seeeduino/hardware/nrf52/1.1.7/cores/nRF5/freertos/config/FreeRTOSConfig.h
+For ubuntu
+~/.arduino15/packages/Seeeduino/hardware/nrf52/1.1.7/cores/nRF5/freertos/config/FreeRTOSConfig.h
+note that 1.1.7 is the version number, it may change in the future
+
+For windows
+%USERPROFILE%\AppData\Local\Arduino15\packages\Seeeduino\hardware\nrf52\1.1.8\cores\nRF5\freertos\config\FreeRTOSConfig.h
+note that 1.1.8 is the version number, it may change in the future
 
 - set configGENERATE_RUN_TIME_STATS to 1

@@ -1,19 +1,17 @@
 {
     "configurations": [
         {
-            "name": "Linux",
+            "name": "windows",
             "includePath": [
                 "${workspaceFolder}/**",
-                "/home/xl/.arduino15/packages/Seeeduino/hardware/nrf52/1.1.7/cores/nRF5/*",
-                "/home/xl/.arduino15/packages/Seeeduino/hardware/nrf52/1.1.7/cores/nRF5/freertos/**",
-                "/home/xl/.arduino15/packages/Seeeduino/hardware/nrf52/1.1.7/libraries/**"
+                "${env.USERPROFILE}/AppData/Local/Arduino15/packages/Seeeduino/hardware/nrf52/*/cores/nRF5/freertos/config/",
+                "${env.USERPROFILE}/AppData/Local/Arduino15/packages/Seeeduino/hardware/nrf52/*/cores/nRF5/freertos/Source/include/",
+                "${env.USERPROFILE}/AppData/Local/Arduino15/packages/Seeeduino/hardware/nrf52/*/cores/nRF5/",
+                "${env.USERPROFILE}/AppData/Local/Arduino15/packages/Seeeduino/hardware/nrf52/*/libraries/**",
+                "${env.USERPROFILE}/AppData/Local/Arduino15/packages/Seeeduino/hardware/nrf52/*/variants/*"
             ],
-            "defines": [],
-            "compilerPath": "/usr/bin/gcc",
-            "cStandard": "c17",
-            "cppStandard": "gnu++17",
-            "intelliSenseMode": "linux-gcc-x64"
         }
     ],
-    "version": 4
+    "version": 4,
+    "enableConfigurationSquiggles": true
 }
