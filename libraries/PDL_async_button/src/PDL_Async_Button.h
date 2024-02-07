@@ -4,16 +4,18 @@
 
 namespace PDL_Async_Button
 {
-    typedef enum {
-      IDLE,
-      SHORT_PRESSED,
-      LONG_PRESSED,
-    } ButtonSignal_e;
 
-    void setPin(uint8_t pin);
-    void setDebounceTimerValue(uint32_t ms);
-    void setLongPressTimerValue(uint32_t ms);
-    uint8_t getState();
-    void init();
+enum ButtonState
+{
+    IDLE,
+    SHORT_PRESS,
+    LONG_PRESS
+};
 
-}
+void setPin(uint8_t pin);
+void setDebounceTime(uint32_t ms);
+void setLongPressTime(uint32_t ms);
+uint8_t getState();
+void init();
+
+} // namespace PDL_Async_Button

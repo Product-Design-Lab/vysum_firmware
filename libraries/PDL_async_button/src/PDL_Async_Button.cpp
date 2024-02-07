@@ -6,7 +6,7 @@ static uint8_t _pin;
 static uint32_t _debounceTimerMs = 5;
 static uint32_t _longPressTimerMs = 1000;
 static bool lastPinState = LOW;
-static ButtonSignal_e _state = IDLE;
+static uint8_t _state = IDLE;
 TaskHandle_t buttonTaskHandle;
 TimerHandle_t LongPressTimerHandle;
 bool longPressFlag = false;
@@ -16,11 +16,11 @@ void setPin(uint8_t pin)
     PDL_Async_Button::_pin = pin;
 }
 
-void setDebounceTimerValue(uint32_t ms)
+void setDebounceTime(uint32_t ms)
 {
     PDL_Async_Button::_debounceTimerMs = ms;
 }
-void setLongPressTimerValue(uint32_t ms)
+void setLongPressTime(uint32_t ms)
 {
     PDL_Async_Button::_longPressTimerMs = ms;
 }
@@ -49,7 +49,7 @@ void buttonTask(void *pvParameters)
 
     while (1)
     {
-        //enable interrupt
+        // enable interrupt
         if (digitalRead(_pin) == LOW)
         {
             lastPinState = LOW;
@@ -73,11 +73,12 @@ void buttonTask(void *pvParameters)
 
         if (lastPinState == HIGH)
         {
+            longPressFlag = false;
             xTimerReset(LongPressTimerHandle, 0);
         }
         else
         {
-            if(longPressFlag == false)
+            if (longPressFlag == false)
             {
                 _state = SHORT_PRESS;
             }
@@ -90,7 +91,7 @@ void init()
 {
     pinMode(PDL_Async_Button::_pin, INPUT_PULLUP);
     xTimerCreate("LongPressTimer", pdMS_TO_TICKS(_longPressTimerMs), pdFALSE, NULL, longPressTimeUpCallback);
-    attachInterrupt(digitalPinToInterrupt(_pin), pressCallback, RISING);
+    xTaskCreate(buttonTask, "buttonTask", 1024, NULL, 1, &buttonTaskHandle);
 }
 
 } // namespace PDL_Async_Button
