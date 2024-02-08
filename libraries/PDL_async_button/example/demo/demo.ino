@@ -4,7 +4,7 @@
 void setup()
 {
     Serial.begin(115200);
-    PDL_Async_Button::setPin(2);
+    PDL_Async_Button::setPin(D0);
     PDL_Async_Button::setDebounceTime(5);
     PDL_Async_Button::setLongPressTime(1000);
     PDL_Async_Button::init();
