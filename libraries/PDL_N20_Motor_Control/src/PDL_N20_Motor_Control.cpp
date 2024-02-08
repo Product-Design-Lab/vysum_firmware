@@ -43,7 +43,7 @@ namespace PDL_N20_Motor_Control
     };
     control_mode_e control_mode = CONTROL_PWM;
 
-    void setPin(uint8_t ena, uint8_t enb, uint8_t PWM_pin, uint8_t DIR_pin)
+    void setPin(const uint8_t ena, const uint8_t enb, const uint8_t PWM_pin, const uint8_t DIR_pin)
     {
         PDL_N20_Motor_Control::ENC_A_pin = ena;
         PDL_N20_Motor_Control::ENC_B_pin = enb;
@@ -52,7 +52,7 @@ namespace PDL_N20_Motor_Control
         dir_dual_pin = false;
     }
 
-    void setPin(uint8_t ena, uint8_t enb, uint8_t PWM_pin, uint8_t DIR_pin1, uint8_t DIR_pin2)
+    void setPin(const uint8_t ena, const uint8_t enb, const uint8_t PWM_pin, const uint8_t DIR_pin1, const uint8_t DIR_pin2)
     {
         PDL_N20_Motor_Control::ENC_A_pin = ena;
         PDL_N20_Motor_Control::ENC_B_pin = enb;
@@ -62,7 +62,7 @@ namespace PDL_N20_Motor_Control
         dir_dual_pin = true;
     }
 
-    void setMaxPwm(uint32_t max_pwm)
+    void setMaxPwm(const uint32_t max_pwm)
     {
         PDL_N20_Motor_Control::max_pwm = max_pwm;
     }
@@ -73,39 +73,42 @@ namespace PDL_N20_Motor_Control
         return percent;
     }
 
-    void setPwmPercent(float percent)
+    void setPwmPercent(const float percent)
     {
         PDL_N20_Motor_Control::control_mode = CONTROL_PWM;
+        float _percent = percent;
         if (percent > 1)
         {
-            percent = 1;
+            _percent = 1;
         }
         else if (percent < -1)
         {
-            percent = -1;
+            _percent = -1;
         }
-        current_dir = percent >= 0 ? FORWARD : BACKWARD;
-        pwm_raw = (uint32_t)(fabs(percent) * max_pwm);
+        current_dir = _percent >= 0 ? FORWARD : BACKWARD;
+        pwm_raw = (uint32_t)(fabs(_percent) * max_pwm);
+        Serial.printf("pwm_raw:%d, dir:%d\n", pwm_raw, current_dir);
     }
 
-    void setPositionLimits(int32_t max_pos, int32_t min_pos)
+    void setPositionLimits(const int32_t max_pos, const int32_t min_pos)
     {
         PDL_N20_Motor_Control::max_pos = max_pos;
         PDL_N20_Motor_Control::min_pos = min_pos;
     }
 
-    void setTargetPosition(int32_t target_position)
+    void setTargetPosition(const int32_t target_position)
     {
+        int32_t _target_position = target_position;
         if (target_position > max_pos)
         {
-            target_position = max_pos;
+            _target_position = max_pos;
         }
         else if (target_position < min_pos)
         {
-            target_position = min_pos;
+            _target_position = min_pos;
         }
         PDL_N20_Motor_Control::control_mode = CONTROL_POSITION;
-        PDL_N20_Motor_Control::target_position = target_position;
+        PDL_N20_Motor_Control::target_position = _target_position;
     }
 
     int32_t getCurrentPosition()
@@ -113,12 +116,13 @@ namespace PDL_N20_Motor_Control
         return current_position;
     }
 
-    void setCurrentPosition(int32_t current_position)
+    void setCurrentPosition(const int32_t current_position)
     {
+        RotaryEncoder.writeAbs(current_position);
         PDL_N20_Motor_Control::current_position = current_position;
     }
 
-    void setGain(float K)
+    void setGain(const float K)
     {
         PDL_N20_Motor_Control::Kp = K;
     }
@@ -148,25 +152,7 @@ namespace PDL_N20_Motor_Control
         return current_speed;
     }
 
-    static void set_pwm(float percent)
-    {
-        if (percent >= 0)
-        {
-            current_dir = FORWARD;
-            pwm_raw = (uint32_t)(percent * max_pwm);
-        }
-        else
-        {
-            current_dir = BACKWARD;
-            pwm_raw = (uint32_t)(-percent * max_pwm);
-        }
-        analogWrite(PWM_pin, pwm_raw);
-        digitalWrite(DIR_pin, current_dir);
-        if (dir_dual_pin)
-            digitalWrite(DIR_pin2, !current_dir);
-    }
-
-    static void run_diagnostics(float error, float u)
+    static void run_diagnostics(const float error, const float u)
     {
         if (control_mode == CONTROL_PWM)
         {
@@ -178,6 +164,19 @@ namespace PDL_N20_Motor_Control
             // target position, current position, error, Kp, u, current pwm, current speed
             Serial.printf("pos mode, target_pos:%ld, current_pos:%ld, spd:%6.3f, err:%6.3f, u:%6.3f,current_pwm:%d\n", target_position, current_position, current_speed, error, u, pwm_raw);
         }
+    }
+
+    static void _run_motor(const uint32_t pwm, const bool dir)
+    {
+        uint32_t _pwm = pwm;
+        if (pwm >= max_pwm)
+        {
+            _pwm = max_pwm;
+        }
+        analogWrite(PWM_pin, _pwm);
+        digitalWrite(DIR_pin, dir);
+        if (dir_dual_pin)
+            digitalWrite(DIR_pin2, !dir);
     }
 
     static void motorTask(void *pvParameters)
@@ -196,19 +195,21 @@ namespace PDL_N20_Motor_Control
             {
                 if (control_mode == CONTROL_PWM)
                 {
-                    set_pwm((float)pwm_raw / (float)max_pwm);
+                    _run_motor(pwm_raw, current_dir);
                 }
                 else if (control_mode == CONTROL_POSITION)
                 {
                     error = target_position - current_position;
-                    u = Kp * error; // typical errpr:50, Kp:-0.02, u:-1
-                    u = fmin(fmax(u, -1), 1);
-                    set_pwm(u);
+                    u = Kp * error;           // typical errpr:50, Kp:-0.02, u:-1
+                    u = fmin(fmax(u, -1), 1); // normalize u to [-1,1]
+                    pwm_raw = (uint32_t)(fabs(u) * max_pwm);
+                    current_dir = u >= 0 ? FORWARD : BACKWARD;
+                    _run_motor(pwm_raw, current_dir);
                 }
             }
             else // disabled
             {
-                set_pwm(0);
+                _run_motor(0, 0);
             }
 
             if (debug_enabled)

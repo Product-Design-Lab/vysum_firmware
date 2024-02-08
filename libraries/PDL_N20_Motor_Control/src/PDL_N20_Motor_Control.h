@@ -8,20 +8,20 @@
 namespace PDL_N20_Motor_Control
 {
 
-    void setPin(uint8_t ena, uint8_t enb, uint8_t PWM_pin, uint8_t DIR_pin);
-    void setPin(uint8_t ena, uint8_t enb, uint8_t PWM_pin, uint8_t DIR_pin1, uint8_t DIR_pin2);
+    void setPin(const uint8_t ena, const uint8_t enb, const uint8_t PWM_pin, const uint8_t DIR_pin);
+    void setPin(const uint8_t ena, const uint8_t enb, const uint8_t PWM_pin, const uint8_t DIR_pin1, const uint8_t DIR_pin2);
 
-    void setMaxPwm(uint32_t max_pwm);
+    void setMaxPwm(const uint32_t max_pwm);
     float getPwmPercent(); // percent
-    void setPwmPercent(float percent);
+    void setPwmPercent(const float percent);
 
-    void setPositionLimits(int32_t max_pos, int32_t min_pos); // encoder count value
-    void setTargetPosition(int32_t target_position);
+    void setPositionLimits(const int32_t max_pos, const int32_t min_pos); // encoder count value
+    void setTargetPosition(const int32_t target_position);
 
     int32_t getCurrentPosition();
-    void setCurrentPosition(int32_t current_position);
+    void setCurrentPosition(const int32_t current_position);
 
-    void setGain(float K);
+    void setGain(const float K);
 
     void enable();
     void disable();
