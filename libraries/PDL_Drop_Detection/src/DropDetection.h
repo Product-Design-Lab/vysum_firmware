@@ -15,8 +15,8 @@ namespace APDS_DropSensor
 
     void init();
     void deinit();
-    void start();
-    void stop();
+    void resume();
+    void pause();
     int get_drop_count();
     void set_drop_count(const int count);
 

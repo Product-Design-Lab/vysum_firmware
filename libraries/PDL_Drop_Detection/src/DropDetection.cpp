@@ -28,7 +28,7 @@ namespace APDS_DropSensor
         {
             data.sample_count = APDS.gestureAvailable(data.u.buffer, data.d.buffer, data.l.buffer, data.r.buffer);
             data.copy_buffer();
-            data.printRaw();
+            // data.printRaw();
             data.calib(false);
             delay(10);
         }

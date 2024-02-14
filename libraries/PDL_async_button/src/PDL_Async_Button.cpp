@@ -30,6 +30,7 @@ namespace PDL_Async_Button
     }
     uint8_t getState() // this will clear state
     {
+        // Serial.printf("Button state: %d\n", _state);
         uint8_t state_temp = _state;
         _state = IDLE;
         return state_temp;
