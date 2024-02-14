@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include "dropDetection.h"
 
-APDS_DropSensor drop_sensor;
 
 void setup()
 {
@@ -9,12 +8,10 @@ void setup()
     while (!Serial)
         ;
 
-    Serial.println("Drop Detection Test");
-    drop_sensor.init();
+    APDS_DropSensor::init();
 }
 
 void loop()
 {
-    drop_sensor.update();
     delay(10);
 }

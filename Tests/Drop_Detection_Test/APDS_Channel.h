@@ -23,6 +23,7 @@ public:
 public:
     // constructor
     APDS_Channel() {}
+    
     void calib(const bool is_initial);
     void copy_buffer();
     void zero_offset();

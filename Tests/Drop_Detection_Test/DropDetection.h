@@ -1,21 +1,23 @@
-#ifndef DROP_DETECTION_H
-#define DROP_DETECTION_H
+#pragma once
 
+// C includes
+
+// Arduino includes
+
+
+
+// project includes
 #include "APDS_Data.h"
 #include <Arduino_APDS9960.h>
 
-
-
-class APDS_DropSensor
+namespace APDS_DropSensor
 {
-public:
-    APDS_Data data;
 
     void init();
-    void update();
+    void deinit();
+    void start();
+    void stop();
+    int get_drop_count();
+    void set_drop_count(const int count);
 
 };
-
-extern APDS_DropSensor drop_sensor;
-
-#endif
