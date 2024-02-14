@@ -84,9 +84,9 @@ namespace APDS_DropSensor
                 if (count > 4)
                 {
                     dropCount++;
-                    Serial.printf("dropCount=%d\n", dropCount);
-                    data.printCrossingState(crossing_state);
-                    Serial.println(millis());
+                    // Serial.printf("dropCount=%d\n", dropCount);
+                    // data.printCrossingState(crossing_state);
+                    // Serial.println(millis());
                     wait_count = 0;
                 }
                 crossing_state = 0;
