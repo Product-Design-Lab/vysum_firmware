@@ -56,7 +56,7 @@ void MotorDriver::setDirNoPin()
 void MotorDriver::setVisenPin(const uint8_t pin)
 {
     VISEN_pin = pin;
-    pinMode(VISEN_pin, INPUT);
+    // pinMode(VISEN_pin, INPUT);
     has_visen_pin = 1;
 }
 

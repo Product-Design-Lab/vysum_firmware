@@ -4,38 +4,40 @@ MotorDriver mp6550;
 
 void setup()
 {
-    mp6550.setPwmPin(8, 9);
+    mp6550.setPwmPin(D8, D9);
     mp6550.setDirNoPin();
     mp6550.setEnableNoPin();
-    mp6550.setVisenPin(10);
+    mp6550.setVisenPin(A1);
     
     mp6550.setMaxPwm(255);
+
+    mp6550.setDebug(true);
 }
 
 void loop()
 {
-    mp6550.setPwmPercent(0.5);
+    mp6550.runMotor(0.5);
     for (int i = 0; i < 10; i++)
     {
         Serial.println(mp6550.getCurrent());
         delay(100);
     }
 
-    mp6550.setPwmPercent(0);
+    mp6550.runMotor(0);
     for (int i = 0; i < 10; i++)
     {
         Serial.println(mp6550.getCurrent());
         delay(100);
     }
 
-    mp6550.setPwmPercent(-0.5);
+    mp6550.runMotor(-0.5);
     for (int i = 0; i < 10; i++)
     {
         Serial.println(mp6550.getCurrent());
         delay(100);
     }
 
-    mp6550.setPwmPercent(0);
+    mp6550.runMotor(0);
     for (int i = 0; i < 10; i++)
     {
         Serial.println(mp6550.getCurrent());
