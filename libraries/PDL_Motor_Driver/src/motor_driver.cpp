@@ -143,7 +143,8 @@ void MotorDriver::runMotor(const float pwm)
     {
         analogWrite(PWM_pin, direction * target_pwm_u32);
         analogWrite(PWM_pin2, !direction * target_pwm_u32);
-        Serial.printf("setting pin %d to %d, pin %d to %d\n", PWM_pin, direction * target_pwm_u32, PWM_pin2, !direction * target_pwm_u32);
+        if (debug_enabled)
+            Serial.printf("setting pin %d to %d, pin %d to %d\n", PWM_pin, direction * target_pwm_u32, PWM_pin2, !direction * target_pwm_u32);
     }
 }
 
@@ -159,7 +160,7 @@ int MotorDriver::getCurrent()
 void MotorDriver::setDebug(bool enable)
 {
     debug_enabled = enable;
-    if(!Serial)
+    if (!Serial)
     {
         Serial.begin(115200);
     }
