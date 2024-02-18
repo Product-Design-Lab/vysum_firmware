@@ -9,39 +9,23 @@ MotorDriver drv8838;
 
 void setup()
 {
-    // set the PWM pin
     drv8838.setPwmPin(9);
-
-    // set the direction pin
-    drv8838.setDirPin(8);
-
-    // set the enable pin
+    drv8838.setDirPin(10);
     drv8838.setEnableNoPin();
-
-    // set the visen pin
-    drv8838.senVisenNoPin();
-
-    // set the maximum PWM
+    drv8838.setVisenNoPin();
     drv8838.setMaxPwm(255);
-
+    drv8838.setDebug(true);
 }
 
 void loop()
 {
-    // set the PWM to 50%
-    drv8838.setPwmPercent(0.5);
+    drv8838.runMotor(0.5);
     delay(1000);
-
-    // set the PWM to 0%
-    drv8838.setPwmPercent(0);
+    drv8838.runMotor(0);
     delay(1000);
-
-    // set the PWM to -50%
-    drv8838.setPwmPercent(-0.5);
+    drv8838.runMotor(-0.5);
     delay(1000);
-
-    // set the PWM to 0%
-    drv8838.setPwmPercent(0);
-    delay(3000);
+    drv8838.runMotor(0);
+    delay(1000);
 
 }
