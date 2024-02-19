@@ -50,15 +50,21 @@ void MotorController::setCurrentPosition(const int32_t current_position)
     this->current_position = current_position;
 }
 
-void MotorController::setGain(const float K)
+void MotorController::setGain(const float Kp, const float Ki)
 {
-    this->Kp = K;
+    this->Kp = Kp;
+    this->Ki = Ki;
 }
 
 void MotorController::setPwm(float u)
 {
     this->u = u;
     control_mode = CONTROL_PWM;
+}
+
+void MotorController::setLoopDelay(const uint32_t delay_ms)
+{
+    xFrequency = pdMS_TO_TICKS(delay_ms);
 }
 
 void MotorController::setDebug(const bool debug)
@@ -68,16 +74,22 @@ void MotorController::setDebug(const bool debug)
 
 void MotorController::printDebug()
 {
+    // print mode
     if (control_mode == CONTROL_PWM)
     {
-        // position, speed, target pwm, current pwm
-        Serial.printf("pwm mode, current_pos:%ld, current_spd:%6.3f, pwm:%df\n", current_position, current_speed, u);
+        Serial.printf("pwm mode, current_pos:%ld, current_spd:%6.3f, pwm:%d", current_position, current_speed, u);
     }
     else if (control_mode == CONTROL_POSITION)
     {
-        // target position, current position, error, Kp, u, current pwm, current speed
-        Serial.printf("pos mode, target_pos:%ld, current_pos:%ld, spd:%6.3f, err:%6.3f, u:%6.3f\n", target_position, current_position, current_speed, error, u);
+        Serial.printf("pos mode, target_pos:%ld, current_pos:%ld, err_kp:%3.3f, err_ki:%3.3f, u:%3.3f", target_position, current_position, error, error_integral, u);
+        Serial.printf(", speed:%6.3f", current_speed);
     }
+
+    if (motor.hasCurrentPin())
+    {
+        Serial.printf(", I:%d, (%.3fmA)", motor.getCurrent(), motor.getCurrent_mA());
+    }
+    Serial.println();
 }
 
 void MotorController::motorTaskWrapper(void *parameter)
@@ -88,7 +100,6 @@ void MotorController::motorTaskWrapper(void *parameter)
 void MotorController::motorTask()
 {
     TickType_t xLastWakeTime;
-    const TickType_t xFrequency = 10; // 10ms
     xLastWakeTime = xTaskGetTickCount();
     while (1)
     {
@@ -101,13 +112,26 @@ void MotorController::motorTask()
         }
         else if (control_mode == CONTROL_POSITION)
         {
+            // use PI control
             error = target_position - current_position;
-            u = Kp * error;
+
+            if (Ki != 0.0)
+            {
+                error_integral += error;
+                error_integral = fmin(fmax(error_integral, -abs(1 / Ki)), abs(1 / Ki)); // anti-windup
+                u = Kp * error + Ki * error_integral;
+            }
+            else
+            {
+                error_integral = 0;
+                u = Kp * error;
+            }
+
             u = fmin(fmax(u, -1), 1); // normalize u to [-1,1]
             motor.runMotor(u);
         }
 
-        if(debug_enabled)
+        if (debug_enabled)
         {
             printDebug();
         }
