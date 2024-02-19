@@ -31,10 +31,12 @@ private:
     };
     bool direction = 0;
 
+    // Current sensing
+    int current_feedback = 0;
+    float visen_A_per_V = 0; 
+
     // Misllaneous
     bool is_enabled = 1;
-    int current_feedback = 0;
-
     bool debug_enabled = 0;
 
 public:
@@ -55,7 +57,10 @@ public:
     void setMaxPwm(const uint32_t max_pwm);
     void runMotor(const float pwm); //-1 to 1
 
+    bool hasCurrentPin();
     int getCurrent();
+    void setVisenSensitivity(const float A_per_V);
+    float getCurrent_mA();
 
     void setDebug(bool enable);
 };

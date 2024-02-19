@@ -148,6 +148,11 @@ void MotorDriver::runMotor(const float pwm)
     }
 }
 
+bool MotorDriver::hasCurrentPin()
+{
+    return (bool)has_visen_pin;
+}
+
 int MotorDriver::getCurrent()
 {
     if (has_visen_pin == 0)
@@ -155,6 +160,20 @@ int MotorDriver::getCurrent()
         return 0;
     }
     return analogRead(VISEN_pin);
+}
+
+void MotorDriver::setVisenSensitivity(const float A_per_V)
+{
+    visen_A_per_V = A_per_V;
+}
+
+float MotorDriver::getCurrent_mA()
+{
+    if (has_visen_pin == 0 || visen_A_per_V == 0)
+    {
+        return 0;
+    }
+    return (visen_A_per_V * 3.3 * analogRead(VISEN_pin) / 1023);
 }
 
 void MotorDriver::setDebug(bool enable)
