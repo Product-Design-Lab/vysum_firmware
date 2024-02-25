@@ -54,12 +54,12 @@ bool APDS9960::begin() {
   if (!setPPULSE(0x8F)) return false; // 16us, 16 pulses // default is: 0x40 = 8us, 1 pulse
   if (!setGestureIntEnable(false)) return false;
   if (!setGestureMode(true)) return false;
-  if (!enablePower()) return false;
-  if (!enableWait()) return false;
+  // if (!enablePower()) return false;
+  // if (!enableWait()) return false;
   // set ADC integration time to 10 ms
   if (!setATIME(256 - (10 / 2.78))) return false;
   // set ADC gain 4x (0x00 => 1x, 0x01 => 4x, 0x02 => 16x, 0x03 => 64x)
-  if (!setCONTROL(0x00)) return false;
+  // if (!setCONTROL(0x00)) return false;
   delay(10);
   // enable power
   if (!enablePower()) return false;
@@ -380,16 +380,16 @@ int APDS9960::gestureAvailable(uint8_t up[32], uint8_t down[32], uint8_t left[32
       return 0;
     }
   }
-  int dataset_count = gestureFIFOAvailable();
+    int dataset_count = gestureFIFOAvailable();
   if (dataset_count <= 0) {
-    return 0;
+        return 0;
   }
-
+  
   handleGesture(dataset_count, up, down, left, right);
   if (_proximityEnabled) {
     setGestureMode(false);
   }
-
+  
   return dataset_count;
 }
 
