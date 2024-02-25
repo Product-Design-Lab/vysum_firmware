@@ -14,10 +14,17 @@ namespace PDL_Async_Button
     TaskHandle_t buttonTaskHandle;
     TimerHandle_t LongPressTimerHandle;
     bool longPressFlag = false;
+    bool debug_flag = false;
 
     void setPin(uint8_t pin)
     {
         PDL_Async_Button::_pin = pin;
+        pinMode(PDL_Async_Button::_pin, INPUT_PULLUP);
+    }
+
+    void setDebug(bool debug)
+    {
+        PDL_Async_Button::debug_flag = debug;
     }
 
     void setDebounceTime(uint32_t ms)
@@ -30,7 +37,8 @@ namespace PDL_Async_Button
     }
     uint8_t getState() // this will clear state
     {
-        // Serial.printf("Button state: %d\n", _state);
+        // if (debug_flag)
+        //     Serial.printf("Button state: %d\n", _state);
         uint8_t state_temp = _state;
         _state = IDLE;
         return state_temp;
@@ -44,15 +52,16 @@ namespace PDL_Async_Button
         BaseType_t xHigherPriorityTaskWoken = pdFALSE;
         vTaskNotifyGiveFromISR(buttonTaskHandle, &xHigherPriorityTaskWoken);
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-
-        // Serial.printf("ISR: Button state: %d\n", lastPinState);
+        if (debug_flag)
+            Serial.printf("ISR: Button state: %d\n", lastPinState);
     }
 
     void longPressTimeUpCallback(TimerHandle_t xTimer)
     {
         _state = LONG_PRESS;
         longPressFlag = true;
-        // Serial.println("Long Press");
+        if (debug_flag)
+            Serial.println("Long Press");
     }
 
     void buttonTask(void *pvParameters)
@@ -80,7 +89,7 @@ namespace PDL_Async_Button
 
             // Serial.println("Debounced");
 
-            if (lastPinState == LOW)//pressed
+            if (lastPinState == LOW) // pressed
             {
                 longPressFlag = false;
                 xTimerReset(LongPressTimerHandle, 0);
@@ -90,7 +99,8 @@ namespace PDL_Async_Button
                 if (longPressFlag == false)
                 {
                     _state = SHORT_PRESS;
-                    // Serial.println("Short Press");
+                    if (debug_flag)
+                        Serial.println("Short Press");
                 }
                 xTimerStop(LongPressTimerHandle, 0);
             }
@@ -99,7 +109,6 @@ namespace PDL_Async_Button
 
     void init()
     {
-        pinMode(PDL_Async_Button::_pin, INPUT_PULLUP);
         LongPressTimerHandle = xTimerCreate("LongPressTimer", pdMS_TO_TICKS(_longPressTimerMs), pdFALSE, NULL, longPressTimeUpCallback);
         xTaskCreate(buttonTask, "buttonTask", 1024, NULL, 1, &buttonTaskHandle);
     }

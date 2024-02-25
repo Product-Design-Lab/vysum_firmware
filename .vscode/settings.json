@@ -1,4 +1,7 @@
 {
     "C_Cpp.default.compilerPath": "",
-    "CodeGPT.apiKey": "OpenAI"
+    "CodeGPT.apiKey": "OpenAI",
+    "files.associations": {
+        "rtos.h": "c"
+    }
 }

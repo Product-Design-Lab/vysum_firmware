@@ -53,7 +53,6 @@ private:
 
 public:
     AsyncButtonGroup();
-    void setPin(uint8_t pin);
     void setPin(uint8_t pin, bool idle_logic_level = HIGH);
     void setDebounceTime(uint32_t ms);
     void setLongPressTime(uint32_t ms);

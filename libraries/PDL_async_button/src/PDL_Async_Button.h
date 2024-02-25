@@ -17,5 +17,6 @@ void setDebounceTime(uint32_t ms);
 void setLongPressTime(uint32_t ms);
 uint8_t getState();
 void init();
+void setDebug(bool debug);
 
 } // namespace PDL_Async_Button

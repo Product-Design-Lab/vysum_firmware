@@ -1,4 +1,4 @@
-#include "PDL_Async_Button.h"
+#include "PDL_Async_Button_Group.h"
 #include "DropDetection.h"
 #include "motor_controller.h"
 
@@ -10,8 +10,8 @@
 MotorDriver mp6550;
 HwRotaryEncoder encoder;
 MotorController motor_controller(mp6550, encoder); // Pass references here
-
-uint8_t ButtonState = 0;
+AsyncButtonGroup button;
+uint8_t buttonState;
 
 void setup()
 {
@@ -34,19 +34,17 @@ void setup()
   motor_controller.setLoopDelay(50);
   motor_controller.start();
 
-  PDL_Async_Button::setPin(D0);
-  // PDL_Async_Button::setDebounceTime(5);
-  // PDL_Async_Button::setLongPressTime(1000);
-  // PDL_Async_Button::init();
-  // PDL_Async_Button::getState();
-  // PDL_Async_Button::setDebug(true);
+  button.setPin(D0);
+  button.setDebounceTime(5);
+  button.setLongPressTime(1000);
+  button.init();
 
   APDS_DropSensor::init();
   APDS_DropSensor::pause();
 
   // wait for short press
   Serial.println("short press to grip");
-  while (digitalRead(D0) == HIGH)
+  while (button.getState() != AsyncButtonGroup::BUTTON_SHORT_PRESS)
   {
     delay(100);
   }
@@ -78,26 +76,9 @@ void loop()
     Serial.printf("Target position: %d\n", pos);
   }
 
-  // ButtonState = PDL_Async_Button::getState();
-  // Bypassing the library for now, TODO: Fix the library
-  ButtonState = PDL_Async_Button::IDLE;
-  if (digitalRead(D0) == LOW)
-  {
-    for (int i = 0; i < 10; i++)
-    {
-      delay(100);
-      if (digitalRead(D0) == HIGH)
-      {
-        ButtonState = PDL_Async_Button::SHORT_PRESS;
-        break;
-      }
-    }
-    if (ButtonState != PDL_Async_Button::SHORT_PRESS)
-      ButtonState = PDL_Async_Button::LONG_PRESS;
-    Serial.printf("Button state: %d\n", ButtonState);
-  }
+  buttonState = button.getState();
 
-  if (ButtonState == PDL_Async_Button::SHORT_PRESS)
+  if (buttonState == AsyncButtonGroup::BUTTON_SHORT_PRESS)
   {
     Serial.println("Short press detected, Dispensing...");
     APDS_DropSensor::resume();
@@ -146,8 +127,7 @@ void loop()
     }
     Serial.println("Dispense complete.");
   }
-
-  if (ButtonState == PDL_Async_Button::LONG_PRESS)
+  else if (buttonState == AsyncButtonGroup::BUTTON_LONG_PRESS)
   {
     Serial.println("Long pressed detected, Opening grip...");
     APDS_DropSensor::pause();

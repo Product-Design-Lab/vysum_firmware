@@ -158,12 +158,6 @@ AsyncButtonGroup::AsyncButtonGroup()
         _timerHandle2 = xTimerCreate("ButtonTimer", pdMS_TO_TICKS(_debounceTime), pdFALSE, (void *)0, _TimerCallback_instance2);
 }
 
-void AsyncButtonGroup::setPin(uint8_t pin)
-{
-    _pin = pin;
-    pinMode(_pin, INPUT);
-}
-
 void AsyncButtonGroup::setPin(uint8_t pin, bool idle_logic_level)
 {
     _pin = pin;
