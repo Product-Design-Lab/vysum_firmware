@@ -41,6 +41,7 @@ public:
 
     int32_t getCurrentPosition();
     void setCurrentPosition(const int32_t current_position);
+    float getCurrentSpeed();
 
     void setPwm(float u);
     void setGain(const float Kp, const float Ki = 0.0);

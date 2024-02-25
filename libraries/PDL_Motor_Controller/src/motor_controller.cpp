@@ -44,6 +44,11 @@ int32_t MotorController::getCurrentPosition()
     return current_position;
 }
 
+float MotorController::getCurrentSpeed()
+{
+    return current_speed;
+}
+
 void MotorController::setCurrentPosition(const int32_t current_position)
 {
     encoder.writeAbs(current_position);
