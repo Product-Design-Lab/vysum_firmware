@@ -18,7 +18,7 @@ void setup()
   Serial.begin(115200);
   while (!Serial)
     ;
-
+  // Serial.println("Hello World")
   mp6550.setPwmPin(D8, D9);
   mp6550.setDirNoPin();
   mp6550.setEnableNoPin();
@@ -41,6 +41,8 @@ void setup()
 
   APDS_DropSensor::init();
   APDS_DropSensor::pause();
+  APDS_DropSensor::setDebug(APDS_DropSensor::DEBUG_LOWPASS);
+  APDS_DropSensor::setCrossCountTrigThreshold(4);
 
   // wait for short press
   Serial.println("short press to grip");
@@ -72,8 +74,16 @@ void loop()
   if (Serial.available())
   {
     int pos = Serial.parseInt();
-    motor_controller.setTargetPosition(pos);
-    Serial.printf("Target position: %d\n", pos);
+    if (pos >= 0 && pos <= 10)
+    {
+      APDS_DropSensor::setDebug((uint8_t)pos);
+      // Serial.printf("Set debug flag: %d\n", pos);
+    }
+    else
+    {
+      motor_controller.setTargetPosition(pos);
+      Serial.printf("Target position: %d\n", pos);
+    }
   }
 
   buttonState = button.getState();
@@ -90,7 +100,7 @@ void loop()
     {
       float spd = motor_controller.getCurrentSpeed();
       float pos = motor_controller.getCurrentPosition();
-      Serial.printf("spd:%.2f, pos:%.2f\n", spd, pos);
+      // Serial.printf("spd:%.2f, pos:%.2f\n", spd, pos);
 
       if (fabs(spd) < 5)
       {
@@ -111,12 +121,13 @@ void loop()
       delay(100);
     }
 
+    // APDS_DropSensor::pause();
     motor_controller.setTargetPosition(0);
     while (1)
     {
       float spd = motor_controller.getCurrentSpeed();
       float pos = motor_controller.getCurrentPosition();
-      Serial.printf("spd:%.2f, pos:%.2f\n", spd, pos);
+      // Serial.printf("spd:%.2f, pos:%.2f\n", spd, pos);
 
       if (fabs(spd) < 5)
       {
@@ -130,7 +141,6 @@ void loop()
   else if (buttonState == AsyncButtonGroup::BUTTON_LONG_PRESS)
   {
     Serial.println("Long pressed detected, Opening grip...");
-    APDS_DropSensor::pause();
     float start_pos = motor_controller.getCurrentPosition();
     motor_controller.setPwm(RELEASE_PWM);
     delay(1000);
@@ -144,6 +154,7 @@ void loop()
       else if (fabs(motor_controller.getCurrentPosition() - start_pos) > 1000)
       {
         Serial.println("distance limit reached, Grip opened");
+
         break;
       }
       else if (digitalRead(D0) == LOW)
