@@ -25,9 +25,15 @@ SOFTWARE.
 #ifndef MOVINGAVERAGE_H
 #define MOVINGAVERAGE_H
 
+#include <stdint.h>
+
 #if defined(__MBED__)
   #include "mbed.h"
 #endif
+
+// #ifndef Serial
+//   #include "Adafruit_TinyUSB.h"
+// #endif
 
 template <class T, uint16_t N>
 class MovingAverage {
@@ -45,26 +51,32 @@ class MovingAverage {
  private:
   bool _first;
   uint8_t _next;
-  uint8_t _shift;
+  // uint8_t _shift;
   int32_t _sum;
   uint16_t _samples;
 
   T _buffer[N];
-  T _result;
+  double _result;
 };
 
 template <class T, uint16_t N>
 MovingAverage<T, N>::MovingAverage():
   _first(true),
   _next(0),
-  _shift(0),
+  // _shift(0),
   _sum(0),
   _samples(N) {
   _result = 0;
 
-  while (_samples >> _shift != 1) {
-    _shift++;
-  }
+  // prevent N==0
+  static_assert(N > 0, "Buffer length must be greater than 0");
+
+  // while (_samples >> _shift != 1) {
+  //   _shift++;
+  // }
+
+  // _samples = 1 << _shift; //ensure _samples is a power of 2
+
 }
 
 template <class T, uint16_t N>
@@ -90,10 +102,23 @@ T MovingAverage<T, N>::add(T value) {
   } else {
     _sum = _sum - _buffer[_next] + value;
     _buffer[_next] = value;
-    _next = (_next + 1) & (_samples - 1);
+    // _next = (_next + 1) & (_samples - 1);
+    if(++_next >= _samples)
+    {
+      _next = 0;
+    }
   }
 
-  _result = (_sum + (_samples >> 1)) >> _shift;  // same as (_sum + (_samples / 2)) / _samples;
+ 
+
+  _result = (double)_sum / _samples;
+  // _result = (_sum + (_samples >> 1)) >> _shift;  // same as (_sum + (_samples / 2)) / _samples;
+
+ //print value, sum, next, _samples and result
+  // if(Serial)
+  // {
+  //   Serial.printf("value: %d, sum: %d, next: %d, _samples: %d, result: %f\n", value, _sum, _next, _samples, _result);
+  // }
 
   return _result;
 }
@@ -120,11 +145,14 @@ void MovingAverage<T, N>::set_samples(uint16_t samples) {
 
     reset();
 
-    _shift = 0;
+    // _shift = 0;
 
-    while (_samples >> _shift != 1) {
-      _shift++;
-    }
+    // while (_samples >> _shift != 1) {
+    //   _shift++;
+    // }
+
+    // _samples = 1 << _shift; //ensure _samples is a power of 2
+
   }
 }
 
