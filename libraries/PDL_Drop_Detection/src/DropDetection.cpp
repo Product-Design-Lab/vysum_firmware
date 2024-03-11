@@ -9,86 +9,99 @@ namespace APDS_DropSensor
 {
     APDS_Data data;
     uint8_t debug_flag = DEBUG_NONE;
-    uint32_t crossing_state = 0;
+    APDS_Data::data_corssing_state_t crossing_state = {};
     int drop_count = 0;
     TaskHandle_t dropDetectionTaskHandle = NULL;
     eTaskState task_state;
 
     // Caution: Long delay will cause APDS9960 buffer overflow, which will cause the sensor to stop working
-    const TickType_t X_FREQUENCY = pdMS_TO_TICKS(20); // task loop delay 20ms,
-    const int wait_cycles = 10;                       // 10*20ms = 200ms
-    const int DETECTION_THRESHOLD = 4;
+    TickType_t X_FREQUENCY = pdMS_TO_TICKS(20); // task loop delay 20ms,
+    TickType_t xLastWakeTime = 0;
+    int _debounce_window_size = 25; // 10*20ms = 200ms
+    int crossing_count_trig_threshhold = 2;
+
+    static void printDebug()
+    {
+        switch (debug_flag)
+        {
+        case DEBUG_RAW:
+            data.printRaw();
+            break;
+        case DEBUG_CALIB:
+            data.printCalib();
+            break;
+        case DEBUG_ZEROING:
+            data.printRaw_i16();
+            break;
+        case DEBUG_LOWPASS:
+            data.printLP();
+            break;
+        case DEBUG_DOT:
+            data.printDot();
+            break;
+        case DEBUG_LR:
+            data.printLR();
+            break;
+        case DEBUG_CROSSING_STATE_PRINT:
+            data.printCrossingState(crossing_state.state);
+            break;
+        case DEBUG_CORSSING_STATE_PLOT:
+            data.plotCrossingState(crossing_state.state);
+            break;
+        case DEBUG_FREQ:
+            Serial.printf("xLastWakeTime=%d, sample_count=%d\n", xLastWakeTime, data.sample_count);
+        default:
+            break;
+        }
+    }
 
     static void dropDetectionTask(void *pvParameters)
     {
-        TickType_t xLastWakeTime = 0;
-        int wait_count = 0;
+
+        int _debounce_sample_count = 0;
 
         while (1)
         {
+            vTaskDelayUntil(&xLastWakeTime, X_FREQUENCY);
 
-            APDS.gestureAvailable(data.u.buffer, data.d.buffer, data.l.buffer, data.r.buffer);
-            data.sample_count = APDS.gestureAvailable(data.u.buffer, data.d.buffer, data.l.buffer, data.r.buffer);
+            data.sample_count = APDS.gestureAvailable(data.u.raw_u8, data.d.raw_u8, data.l.raw_u8, data.r.raw_u8);
             data.process();
-            crossing_state |= data.get_crossing_state();
+            crossing_state.state |= data.get_crossing_state().state;
 
-            switch (debug_flag)
-            {
-            case DEBUG_RAW:
-                data.printRaw();
-                break;
-            case DEBUG_CALIB:
-                data.printCalib();
-                break;
-            case DEBUG_ZEROING:
-                data.printRaw_i16();
-                break;
-            case DEBUG_LOWPASS:
-                data.printLP();
-                break;
-            case DEBUG_DOT:
-                data.printDot();
-                break;
-            case DEBUG_LR:
-                data.printLR();
-                break;
-            case DEBUG_CROSSING_STATE_PRINT:
-                data.printCrossingState(crossing_state);
-                break;
-            case DEBUG_CORSSING_STATE_PLOT:
-                data.plotCrossingState(crossing_state);
-                break;
-            default:
-                break;
-            }
+            printDebug();
 
-            if (++wait_count < wait_cycles)
-            {
-                // prevent conseqtive drops
-                crossing_state = 0;
-            }
-            else
-            {
-                // get the number of bits set
-                uint32_t count = 0;
-                for (int i = 0; i < 32; i++)
-                {
-                    count += (crossing_state >> i) & 1;
-                }
+            _debounce_sample_count += data.sample_count;
 
-                if (count > DETECTION_THRESHOLD)
+            if (_debounce_sample_count >= _debounce_window_size)
+            {
+                // extract crossing state
+                uint8_t dot_crossing_count = crossing_state.l.DOT_CROSS_UPPER_BOUND + crossing_state.l.DOT_CROSS_LOWER_BOUND +
+                                             crossing_state.r.DOT_CROSS_UPPER_BOUND + crossing_state.r.DOT_CROSS_LOWER_BOUND;
+                // uint8_t dot_crossing_count = crossing_state.u.DOT_CROSS_UPPER_BOUND + crossing_state.u.DOT_CROSS_LOWER_BOUND +
+                //                              crossing_state.d.DOT_CROSS_UPPER_BOUND + crossing_state.d.DOT_CROSS_LOWER_BOUND +
+                //                              crossing_state.l.DOT_CROSS_UPPER_BOUND + crossing_state.l.DOT_CROSS_LOWER_BOUND +
+                //                              crossing_state.r.DOT_CROSS_UPPER_BOUND + crossing_state.r.DOT_CROSS_LOWER_BOUND;
+
+                uint8_t lp_crossing_count = crossing_state.u.LP_CROSS_UPPER_BOUND + crossing_state.u.LP_CROSS_LOWER_BOUND +
+                                            crossing_state.d.LP_CROSS_UPPER_BOUND + crossing_state.d.LP_CROSS_LOWER_BOUND +
+                                            crossing_state.l.LP_CROSS_UPPER_BOUND + crossing_state.l.LP_CROSS_LOWER_BOUND +
+                                            crossing_state.r.LP_CROSS_UPPER_BOUND + crossing_state.r.LP_CROSS_LOWER_BOUND;
+
+                uint8_t lr_crossing_count = crossing_state.lr.RISE_OVER_UPPER_BOUND + crossing_state.lr.FALL_BELOW_UPPER_BOUND +
+                                            crossing_state.lr.RISE_OVER_LOWER_BOUND + crossing_state.lr.FALL_BELOW_LOWER_BOUND;
+
+                uint8_t total_crossing_count = __builtin_popcount((uint32_t)crossing_state.state);
+
+                if (dot_crossing_count > crossing_count_trig_threshhold)
                 {
                     drop_count++;
-                    // Serial.printf("drop_count=%d\n", drop_count);
-                    // data.printCrossingState(crossing_state);
-                    // Serial.println(millis());
-                    wait_count = 0;
+                    _debounce_sample_count = 0;
+                    crossing_state.state = 0;
+                    Serial.printf("crossing_count: dot:%d, lp:%d, lr:%d, total:%d, drop_count:%d\n", dot_crossing_count, lp_crossing_count, lr_crossing_count, total_crossing_count, drop_count);
                 }
-                crossing_state = 0;
+                
+                // crossing_state.state = 0;
             }
-            if (debug_flag == DEBUG_FREQ)
-                Serial.printf("xLastWakeTime=%d\n", xLastWakeTime);
-            vTaskDelayUntil(&xLastWakeTime, X_FREQUENCY);
         }
     }
 
@@ -122,25 +135,25 @@ namespace APDS_DropSensor
 
         for (int i = 0; i < 128; i++)
         {
-            data.sample_count = APDS.gestureAvailable(data.u.buffer, data.d.buffer, data.l.buffer, data.r.buffer);
-            data.copy_buffer();
+            data.sample_count = APDS.gestureAvailable(data.u.raw_u8, data.d.raw_u8, data.l.raw_u8, data.r.raw_u8);
+            // data.copy_buffer();
             if (debug_flag == DEBUG_CALIB)
                 data.printRaw();
             data.calib(false);
             delay(10);
         }
 
-        data.set_bounds_lr(6, -4);
+        data.set_bounds_lr(4, -4);
 
-        data.u.set_bounds_lp(4, -4);
-        data.d.set_bounds_lp(4, -4);
-        data.l.set_bounds_lp(4, -4);
-        data.r.set_bounds_lp(4, -4);
+        data.u.set_bounds_lp(6, -6);
+        data.d.set_bounds_lp(6, -6);
+        data.l.set_bounds_lp(6, -6);
+        data.r.set_bounds_lp(6, -6);
 
-        data.u.set_bounds_dot(4, -4);
-        data.d.set_bounds_dot(4, -4);
-        data.l.set_bounds_dot(4, -4);
-        data.r.set_bounds_dot(4, -4);
+        data.u.set_bounds_dot(6, -6);
+        data.d.set_bounds_dot(6, -6);
+        data.l.set_bounds_dot(6, -6);
+        data.r.set_bounds_dot(6, -6);
 
         xTaskCreate(dropDetectionTask, "dropDetectionTask", 2048, NULL, priority, &dropDetectionTaskHandle);
         if (debug_flag == DEBUG_INFO)
@@ -206,8 +219,28 @@ namespace APDS_DropSensor
     void setDebug(uint8_t debug)
     {
         if (debug >= DEBUG_NONE && debug < DEBUG_MAX)
+        {
             debug_flag = debug;
+            Serial.printf("Set debug flag: %d\n", debug);
+        }
         else
             debug_flag = DEBUG_NONE;
     }
+
+    void setCrossCountTrigThreshold(int threshold)
+    {
+        if (threshold > 0 && threshold < 8)
+            crossing_count_trig_threshhold = threshold;
+    }
+
+    void setDebouceWindowSize(uint8_t count)
+    {
+        _debounce_window_size = count;
+    }
+
+    void setLoopDelayMs(uint32_t ms)
+    {
+        X_FREQUENCY = pdMS_TO_TICKS(ms);
+    }
+
 }

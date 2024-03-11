@@ -12,11 +12,6 @@ void APDS_Channel::calib(const bool is_initial = 1)
         calibValue--;
 }
 
-void APDS_Channel::copy_buffer()
-{
-    memcpy(raw_u8, buffer, sizeof(uint8_t) * count);
-}
-
 void APDS_Channel::zero_offset()
 {
     for (int i = 0; i < count; i++)
@@ -25,11 +20,15 @@ void APDS_Channel::zero_offset()
     }
 }
 
+#include <Adafruit_TinyUSB.h>//TODO: remove this aftern testing
 void APDS_Channel::lowpass()
 {
     for (int i = 0; i < count; i++)
     {
+        
         lp[i] = LP_filter.add(raw_i16[i]);
+        // lp[i] = raw_i16[i]*0.2 + lp[i]*0.8;
+        // Serial.printf("raw_i16[%d]:%d, lp[%d]:%d\n", i, raw_i16[i], i, lp[i]);
     }
 }
 
@@ -59,28 +58,15 @@ void APDS_Channel::set_bounds_dot(const float up_b_dot, const float low_b_dot)
     this->low_b_dot = low_b_dot;
 }
 
-uint8_t APDS_Channel::check_crossing()
+APDS_Channel::channel_crossing_state_t APDS_Channel::check_crossing_state()
 {
-    uint8_t state = 0;
+    APDS_Channel::channel_crossing_state_t crossing_state = {};
     for (int i = 0; i < count; i++)
     {
-        if (lp[i] > up_b_lp)
-        {
-            state |= 0x01;
-        }
-        else if (lp[i] < low_b_lp)
-        {
-            state |= 0x2;
-        }
-
-        if (dot[i] > up_b_dot)
-        {
-            state |= 0x4;
-        }
-        else if (dot[i] < low_b_dot)
-        {
-            state |= 0x8;
-        }
+        crossing_state.LP_CROSS_UPPER_BOUND |= (bool)(lp[i] > up_b_lp);
+        crossing_state.LP_CROSS_LOWER_BOUND |= (bool)(lp[i] < low_b_lp);
+        crossing_state.DOT_CROSS_UPPER_BOUND |= (bool)(dot[i] > up_b_dot);
+        crossing_state.DOT_CROSS_LOWER_BOUND |= (bool)(dot[i] < low_b_dot);
     }
-    return state;
+    return crossing_state;
 }

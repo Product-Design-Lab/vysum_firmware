@@ -28,6 +28,7 @@ namespace APDS_DropSensor
         DEBUG_MAX
     };
 
+
     void init(uint32_t priority = 1);
     void deinit();
     void resume();
@@ -36,5 +37,9 @@ namespace APDS_DropSensor
     void set_drop_count(const int count);
 
     void setDebug(uint8_t debug);
+    void setCrossCountTrigThreshold(int threshold);
+    void setDebouceWindowSize(uint8_t count);
+    void setLoopDelayMs(uint32_t ms);
+
 
 };
