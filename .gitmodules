@@ -1,0 +1,3 @@
+[submodule "libraries/movingAverage"]
+	path = libraries/movingAverage
+	url = https://github.com/xuteng0/MovingAverage.git
