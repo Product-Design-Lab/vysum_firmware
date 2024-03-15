@@ -22,110 +22,84 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 */
 
-#ifndef MOVINGAVERAGE_H
-#define MOVINGAVERAGE_H
-
-#include <stdint.h>
+#pragma once
 
 #if defined(__MBED__)
-  #include "mbed.h"
+#include "mbed.h"
 #endif
 
-// #ifndef Serial
-//   #include "Adafruit_TinyUSB.h"
-// #endif
+// #include "Adafruit_TinyUSB.h"
+#include <type_traits>
+#include <cstdint>
 
 template <class T, uint16_t N>
-class MovingAverage {
- public:
-  MovingAverage();
-  virtual ~MovingAverage(void);
+class MovingAverage
+{
+public:
+  MovingAverage() : _first(true), _next(0), _sum(0), _samples(N)
+  {
+    static_assert(N > 0, "Buffer length must be greater than 0");
+  }
+  virtual ~MovingAverage(void) = default;
+
+  // if T is floating point, use float as SumType, otherwise use int, requires C++11
+  using SumType = typename std::conditional<std::is_floating_point<T>::value, float, int>::type;
 
   T add(T value);
-  T get();
-  int32_t get_sum();
+  T get() const { return _result; }
+  auto get_sum() const -> SumType { return _sum; }
+
   void fill(T value);
-  void reset();
+  void reset() { _first = true; }
   void set_samples(uint16_t samples);
 
- private:
+private:
   bool _first;
   uint8_t _next;
-  // uint8_t _shift;
-  int32_t _sum;
+  SumType _sum;
   uint16_t _samples;
 
   T _buffer[N];
-  double _result;
+  T _result;
 };
 
 template <class T, uint16_t N>
-MovingAverage<T, N>::MovingAverage():
-  _first(true),
-  _next(0),
-  // _shift(0),
-  _sum(0),
-  _samples(N) {
-  _result = 0;
-
-  // prevent N==0
-  static_assert(N > 0, "Buffer length must be greater than 0");
-
-  // while (_samples >> _shift != 1) {
-  //   _shift++;
-  // }
-
-  // _samples = 1 << _shift; //ensure _samples is a power of 2
-
-}
-
-template <class T, uint16_t N>
-MovingAverage<T, N>::~MovingAverage(void) {
-}
-
-template <class T, uint16_t N>
-T MovingAverage<T, N>::get() {
-  return _result;
-}
-template <class T, uint16_t N>
-int32_t MovingAverage<T, N>::get_sum() {
-  return _sum;
-}
-
-template <class T, uint16_t N>
-T MovingAverage<T, N>::add(T value) {
+T MovingAverage<T, N>::add(T value)
+{
   // fill buffer when using first
-  if (_first) {
+  if (_first)
+  {
     _first = false;
     fill(value);
-
-  } else {
+  }
+  else
+  {
     _sum = _sum - _buffer[_next] + value;
     _buffer[_next] = value;
-    // _next = (_next + 1) & (_samples - 1);
-    if(++_next >= _samples)
-    {
-      _next = 0;
-    }
+    _next = (_next + 1) % _samples;
   }
 
- 
-
-  _result = (double)_sum / _samples;
-  // _result = (_sum + (_samples >> 1)) >> _shift;  // same as (_sum + (_samples / 2)) / _samples;
-
- //print value, sum, next, _samples and result
-  // if(Serial)
+  // Arduino ide will give a warning for "if constexpr" saying it requires C++17
+  // maybe it's better to keep it simple
+  // if constexpr (std::is_floating_point<T>::value)
   // {
-  //   Serial.printf("value: %d, sum: %d, next: %d, _samples: %d, result: %f\n", value, _sum, _next, _samples, _result);
+  //   _result = static_cast<T>(_sum / _samples);
   // }
+  // else
+  // {
+  //   _result = static_cast<T>((_sum + (_samples / 2)) / _samples);
+  // }
+
+  _result = static_cast<T>(_sum / _samples);// no rounding for int
 
   return _result;
 }
 
 template <class T, uint16_t N>
-void MovingAverage<T, N>::fill(T value) {
-  for (uint16_t i = 0; i < _samples; i++) {
+void MovingAverage<T, N>::fill(T value)
+{
+  for (uint16_t i = 0; i < _samples; i++)
+  {
     _buffer[i] = value;
   }
 
@@ -134,26 +108,12 @@ void MovingAverage<T, N>::fill(T value) {
 }
 
 template <class T, uint16_t N>
-void MovingAverage<T, N>::reset() {
-  _first = true;
-}
-
-template <class T, uint16_t N>
-void MovingAverage<T, N>::set_samples(uint16_t samples) {
-  if (samples <= N) {
+void MovingAverage<T, N>::set_samples(uint16_t samples)
+{
+  if (samples <= N)
+  {
     _samples = samples;
 
     reset();
-
-    // _shift = 0;
-
-    // while (_samples >> _shift != 1) {
-    //   _shift++;
-    // }
-
-    // _samples = 1 << _shift; //ensure _samples is a power of 2
-
   }
 }
-
-#endif
