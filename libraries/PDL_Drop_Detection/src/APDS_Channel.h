@@ -4,7 +4,7 @@
 #include <MovingAverage.h>
 
 #define MAX_SAMPLES 32
-#define MOVING_AVG_SAMPLES 3
+#define MOVING_AVG_SAMPLES 4
 
 class APDS_Channel
 {
@@ -21,28 +21,34 @@ public:
         uint8_t state : 4;
     };
 
-public:
-    uint8_t raw_u8[MAX_SAMPLES];
-    int16_t raw_i16[MAX_SAMPLES];
-    float lp[MAX_SAMPLES];  // low pass filter
-    float dot[MAX_SAMPLES]; // temporal difference
-    uint8_t calibValue;
-    uint8_t count;
-
 private:
-    MovingAverage<int16_t, MOVING_AVG_SAMPLES> LP_filter;
-    float last_val;
-    float up_b_lp, low_b_lp, up_b_dot, low_b_dot;
+    uint8_t raw_u8[MAX_SAMPLES];
+    int raw_i32[MAX_SAMPLES];
+    int lp[MAX_SAMPLES];  // low pass filter
+    int dot[MAX_SAMPLES]; // temporal difference
+    uint8_t calibValue;
+
+    uint8_t count;
+    MovingAverage<int, MOVING_AVG_SAMPLES> LP_filter;
+    int last_val;
+    int up_b_lp, low_b_lp, up_b_dot, low_b_dot;
+    void calib(const bool is_initial);
+    void zero_offset();
+    void lowpass();
+    void diff();
+    channel_crossing_state_t check_crossing_state();
 
 public:
     // constructor
     APDS_Channel() {}
 
-    void calib(const bool is_initial);
-    void zero_offset();
-    void lowpass();
-    void diff();
-    void set_bounds_lp(const float up_b_lp, const float low_b_lp);
-    void set_bounds_dot(const float up_b_dot, const float low_b_dot);
-    channel_crossing_state_t check_crossing_state();
+    channel_crossing_state_t process_single_channel(int sample_count);
+    void set_bounds_lp(const int up_b_lp, const int low_b_lp);
+    void set_bounds_dot(const int up_b_dot, const int low_b_dot);
+
+    uint8_t *get_raw_u8() { return raw_u8; }
+    const int *get_raw_i32() { return raw_i32; }
+    const int *get_lp() { return lp; }
+    const int *get_dot() { return dot; }
+    uint8_t get_calibValue() { return calibValue; }
 };

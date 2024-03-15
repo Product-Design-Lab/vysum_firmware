@@ -41,5 +41,9 @@ namespace APDS_DropSensor
     void setDebouceWindowSize(uint8_t count);
     void setLoopDelayMs(uint32_t ms);
 
+    void setBoundsLR(const uint8_t bound);
+    void setBoundsLP(const uint8_t bound);
+    void setBoundsDot(const uint8_t bound);
+
 
 };

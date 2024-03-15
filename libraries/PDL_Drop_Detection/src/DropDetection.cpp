@@ -7,18 +7,23 @@
 
 namespace APDS_DropSensor
 {
+    constexpr uint8_t LR_THRESHOLD = 4;
+    constexpr uint8_t LP_THRESHOLD = 6;
+    constexpr uint8_t DOT_THRESHOLD = 5;
+    int _debounce_window_size = 50; // 10*20ms = 200ms
+    int crossing_count_trig_threshhold = 2;
+
     APDS_Data data;
-    uint8_t debug_flag = DEBUG_NONE;
-    APDS_Data::data_corssing_state_t crossing_state = {};
+    uint8_t debug_flag = DEBUG_INFO;
+    APDS_Data::data_crossing_state_t crossing_state = {};
     int drop_count = 0;
     TaskHandle_t dropDetectionTaskHandle = NULL;
     eTaskState task_state;
 
     // Caution: Long delay will cause APDS9960 buffer overflow, which will cause the sensor to stop working
-    TickType_t X_FREQUENCY = pdMS_TO_TICKS(20); // task loop delay 20ms,
+    TickType_t X_FREQUENCY = pdMS_TO_TICKS(50); // task loop delay 20ms,
     TickType_t xLastWakeTime = 0;
-    int _debounce_window_size = 25; // 10*20ms = 200ms
-    int crossing_count_trig_threshhold = 2;
+
 
     static void printDebug()
     {
@@ -31,7 +36,7 @@ namespace APDS_DropSensor
             data.printCalib();
             break;
         case DEBUG_ZEROING:
-            data.printRaw_i16();
+            data.printRaw_i32();
             break;
         case DEBUG_LOWPASS:
             data.printLP();
@@ -64,9 +69,9 @@ namespace APDS_DropSensor
         {
             vTaskDelayUntil(&xLastWakeTime, X_FREQUENCY);
 
-            data.sample_count = APDS.gestureAvailable(data.u.raw_u8, data.d.raw_u8, data.l.raw_u8, data.r.raw_u8);
-            data.process();
-            crossing_state.state |= data.get_crossing_state().state;
+            data.sample_count = APDS.gestureAvailable(data.u.get_raw_u8(), data.d.get_raw_u8(), data.l.get_raw_u8(), data.r.get_raw_u8());
+            data.process_all_channel();
+            crossing_state.state = data.get_crossing_state().state;
 
             printDebug();
 
@@ -75,12 +80,13 @@ namespace APDS_DropSensor
             if (_debounce_sample_count >= _debounce_window_size)
             {
                 // extract crossing state
-                uint8_t dot_crossing_count = crossing_state.l.DOT_CROSS_UPPER_BOUND + crossing_state.l.DOT_CROSS_LOWER_BOUND +
-                                             crossing_state.r.DOT_CROSS_UPPER_BOUND + crossing_state.r.DOT_CROSS_LOWER_BOUND;
-                // uint8_t dot_crossing_count = crossing_state.u.DOT_CROSS_UPPER_BOUND + crossing_state.u.DOT_CROSS_LOWER_BOUND +
-                //                              crossing_state.d.DOT_CROSS_UPPER_BOUND + crossing_state.d.DOT_CROSS_LOWER_BOUND +
-                //                              crossing_state.l.DOT_CROSS_UPPER_BOUND + crossing_state.l.DOT_CROSS_LOWER_BOUND +
+                // uint8_t dot_crossing_count = crossing_state.l.DOT_CROSS_UPPER_BOUND + crossing_state.l.DOT_CROSS_LOWER_BOUND +
                 //                              crossing_state.r.DOT_CROSS_UPPER_BOUND + crossing_state.r.DOT_CROSS_LOWER_BOUND;
+
+                uint8_t dot_crossing_count = crossing_state.u.DOT_CROSS_UPPER_BOUND + crossing_state.u.DOT_CROSS_LOWER_BOUND +
+                                             crossing_state.d.DOT_CROSS_UPPER_BOUND + crossing_state.d.DOT_CROSS_LOWER_BOUND +
+                                             crossing_state.l.DOT_CROSS_UPPER_BOUND + crossing_state.l.DOT_CROSS_LOWER_BOUND +
+                                             crossing_state.r.DOT_CROSS_UPPER_BOUND + crossing_state.r.DOT_CROSS_LOWER_BOUND;
 
                 uint8_t lp_crossing_count = crossing_state.u.LP_CROSS_UPPER_BOUND + crossing_state.u.LP_CROSS_LOWER_BOUND +
                                             crossing_state.d.LP_CROSS_UPPER_BOUND + crossing_state.d.LP_CROSS_LOWER_BOUND +
@@ -92,14 +98,14 @@ namespace APDS_DropSensor
 
                 uint8_t total_crossing_count = __builtin_popcount((uint32_t)crossing_state.state);
 
-                if (dot_crossing_count > crossing_count_trig_threshhold)
+                if (dot_crossing_count > 2)
                 {
                     drop_count++;
                     _debounce_sample_count = 0;
                     crossing_state.state = 0;
                     Serial.printf("crossing_count: dot:%d, lp:%d, lr:%d, total:%d, drop_count:%d\n", dot_crossing_count, lp_crossing_count, lr_crossing_count, total_crossing_count, drop_count);
                 }
-                
+
                 // crossing_state.state = 0;
             }
         }
@@ -118,8 +124,6 @@ namespace APDS_DropSensor
         if (!Serial)
         {
             Serial.begin(115200);
-            while (!Serial)
-                ;
         }
 
         if (!APDS.begin())
@@ -135,25 +139,16 @@ namespace APDS_DropSensor
 
         for (int i = 0; i < 128; i++)
         {
-            data.sample_count = APDS.gestureAvailable(data.u.raw_u8, data.d.raw_u8, data.l.raw_u8, data.r.raw_u8);
-            // data.copy_buffer();
+            data.sample_count = APDS.gestureAvailable(data.u.get_raw_u8(), data.d.get_raw_u8(), data.l.get_raw_u8(), data.r.get_raw_u8());
             if (debug_flag == DEBUG_CALIB)
                 data.printRaw();
-            data.calib(false);
+            data.process_all_channel();
             delay(10);
         }
 
-        data.set_bounds_lr(4, -4);
-
-        data.u.set_bounds_lp(6, -6);
-        data.d.set_bounds_lp(6, -6);
-        data.l.set_bounds_lp(6, -6);
-        data.r.set_bounds_lp(6, -6);
-
-        data.u.set_bounds_dot(6, -6);
-        data.d.set_bounds_dot(6, -6);
-        data.l.set_bounds_dot(6, -6);
-        data.r.set_bounds_dot(6, -6);
+        setBoundsLR(LR_THRESHOLD);
+        setBoundsLP(LP_THRESHOLD);
+        setBoundsDot(DOT_THRESHOLD);
 
         xTaskCreate(dropDetectionTask, "dropDetectionTask", 2048, NULL, priority, &dropDetectionTaskHandle);
         if (debug_flag == DEBUG_INFO)
@@ -241,6 +236,27 @@ namespace APDS_DropSensor
     void setLoopDelayMs(uint32_t ms)
     {
         X_FREQUENCY = pdMS_TO_TICKS(ms);
+    }
+
+    void setBoundsLR(const uint8_t bound)
+    {
+        data.set_bounds_lr((int)bound, (int)(-bound));
+    }
+
+    void setBoundsLP(const uint8_t bound)
+    {
+        data.u.set_bounds_lp((int)bound, (int)(-bound));
+        data.d.set_bounds_lp((int)bound, (int)(-bound));
+        data.l.set_bounds_lp((int)bound, (int)(-bound));
+        data.r.set_bounds_lp((int)bound, (int)(-bound));
+    }
+
+    void setBoundsDot(const uint8_t bound)
+    {
+        data.u.set_bounds_dot((int)bound, (int)(-bound));
+        data.d.set_bounds_dot((int)bound, (int)(-bound));
+        data.l.set_bounds_dot((int)bound, (int)(-bound));
+        data.r.set_bounds_dot((int)bound, (int)(-bound));
     }
 
 }

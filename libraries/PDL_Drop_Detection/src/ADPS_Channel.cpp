@@ -16,19 +16,19 @@ void APDS_Channel::zero_offset()
 {
     for (int i = 0; i < count; i++)
     {
-        raw_i16[i] = raw_u8[i] - calibValue;
+        raw_i32[i] = raw_u8[i] - calibValue;
     }
 }
 
-#include <Adafruit_TinyUSB.h>//TODO: remove this aftern testing
+// #include <Adafruit_TinyUSB.h>//TODO: remove this aftern testing
 void APDS_Channel::lowpass()
 {
     for (int i = 0; i < count; i++)
     {
         
-        lp[i] = LP_filter.add(raw_i16[i]);
-        // lp[i] = raw_i16[i]*0.2 + lp[i]*0.8;
-        // Serial.printf("raw_i16[%d]:%d, lp[%d]:%d\n", i, raw_i16[i], i, lp[i]);
+        lp[i] = LP_filter.add(raw_i32[i]);
+        // lp[i] = raw_i32[i]*0.2 + lp[i]*0.8;
+        // Serial.printf("raw_i32[%d]:%d, lp[%d]:%d\n", i, raw_i32[i], i, lp[i]);
     }
 }
 
@@ -46,13 +46,24 @@ void APDS_Channel::diff()
     last_val = lp[count - 1];
 }
 
-void APDS_Channel::set_bounds_lp(const float up_b_lp, const float low_b_lp)
+APDS_Channel::channel_crossing_state_t APDS_Channel::process_single_channel(int sample_count)
+{
+    this->count = sample_count;
+    zero_offset();
+    lowpass();
+    diff();
+    calib(false);
+    
+    return check_crossing_state();
+}
+
+void APDS_Channel::set_bounds_lp(const int up_b_lp, const int low_b_lp)
 {
     this->up_b_lp = up_b_lp;
     this->low_b_lp = low_b_lp;
 }
 
-void APDS_Channel::set_bounds_dot(const float up_b_dot, const float low_b_dot)
+void APDS_Channel::set_bounds_dot(const int up_b_dot, const int low_b_dot)
 {
     this->up_b_dot = up_b_dot;
     this->low_b_dot = low_b_dot;

@@ -22,7 +22,7 @@ public:
      | reserved | lr_state | r_state | l_state | d_state | u_state |
      |  32 - 20 |  19 - 16 | 15 - 12 |  11 - 8 |  7 - 4  |  3 - 0  |
     */
-    union data_corssing_state_t
+    union data_crossing_state_t
     {
         struct
         {
@@ -44,25 +44,23 @@ public:
     int sample_count;
 
 private:
-    float lr_diff[MAX_SAMPLES];
-    float lr_diff_prev;
-    float up_b_lr, low_b_lr;
-    data_corssing_state_t crossing_state;
-    void compute_lr_diff();
+    int lr_diff[MAX_SAMPLES];
+    int lr_diff_prev;
+    int up_b_lr, low_b_lr;
+    data_crossing_state_t crossing_state;
     channel_pair_crossing_state_t check_lr_crossing_state();
+    channel_pair_crossing_state_t compute_lr_diff();
 
 public:
     // constructor
     APDS_Data();
-    void set_bounds_lr(const float up_b_lr, const float low_b_lr);
-    void calib(const bool is_initial);
-    // void copy_buffer();
-    void process();
-    data_corssing_state_t get_crossing_state();
+    void set_bounds_lr(const int up_b_lr, const int low_b_lr);
+    data_crossing_state_t process_all_channel();
+    data_crossing_state_t get_crossing_state();
 
     void printRaw();
     void printCalib();
-    void printRaw_i16();
+    void printRaw_i32();
     void printLP();
     void printDot();
     void printLR();
