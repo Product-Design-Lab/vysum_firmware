@@ -16,7 +16,6 @@ void loop()
     if (Serial.available())
     {
         char c = Serial.peek();
-        Serial.println(c);
         if (c == 'p')
         {
             APDS_DropSensor::pause();

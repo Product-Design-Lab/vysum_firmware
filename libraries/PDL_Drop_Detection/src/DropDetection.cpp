@@ -7,23 +7,26 @@
 
 namespace APDS_DropSensor
 {
-    constexpr uint8_t LR_THRESHOLD = 4;
-    constexpr uint8_t LP_THRESHOLD = 6;
-    constexpr uint8_t DOT_THRESHOLD = 2.5;
-    int _debounce_window_size = 100; 
+    constexpr uint8_t DEFAULT_LR_THRESHOLD = 4;
+    constexpr uint8_t DEFAULT_LP_THRESHOLD = 6;
+    constexpr uint8_t DEFAULT_DOT_THRESHOLD = 2.5;
+    constexpr uint32_t TASK_STACK_SIZE = 2048;
+    constexpr uint8_t MAX_LOOP_DELAY_MS = 80;
+    int _debounce_window_size = 100;
     int crossing_count_trig_threshhold = 2;
 
     APDS_Data data;
     uint8_t debug_flag = DEBUG_INFO;
     APDS_Data::data_crossing_state_t crossing_state = {};
     int drop_count = 0;
+    StaticTask_t xTaskBuffer;
+    StackType_t xStack[TASK_STACK_SIZE];
     TaskHandle_t dropDetectionTaskHandle = NULL;
     eTaskState task_state;
 
     // Caution: Long delay will cause APDS9960 buffer overflow, which will cause the sensor to stop working
-    TickType_t X_FREQUENCY = pdMS_TO_TICKS(50); // task loop delay 20ms,
+    TickType_t X_FREQUENCY = pdMS_TO_TICKS(70); // task loop delay 20ms,
     TickType_t xLastWakeTime = 0;
-
 
     static void printDebug()
     {
@@ -64,6 +67,7 @@ namespace APDS_DropSensor
     {
 
         int _debounce_sample_count = 0;
+        APDS.begin();
 
         while (1)
         {
@@ -103,8 +107,8 @@ namespace APDS_DropSensor
                     drop_count++;
                     _debounce_sample_count = 0;
                     crossing_state.state = 0;
-                    data.printDot();
-                    Serial.printf("crossing_count: dot:%d, lp:%d, lr:%d, total:%d, drop_count:%d\n", dot_crossing_count, lp_crossing_count, lr_crossing_count, total_crossing_count, drop_count);
+                    // data.printDot();
+                    // Serial.printf("crossing_count: dot:%d, lp:%d, lr:%d, total:%d, drop_count:%d\n", dot_crossing_count, lp_crossing_count, lr_crossing_count, total_crossing_count, drop_count);
                 }
 
                 // crossing_state.state = 0;
@@ -138,20 +142,37 @@ namespace APDS_DropSensor
                 Serial.println("APDS-9960 initialization complete");
         }
 
-        for (int i = 0; i < 128; i++)
+        TickType_t end_time = xTaskGetTickCount() + pdMS_TO_TICKS(3000);
+        while (xLastWakeTime < end_time)
         {
+            vTaskDelayUntil(&xLastWakeTime, X_FREQUENCY);
             data.sample_count = APDS.gestureAvailable(data.u.get_raw_u8(), data.d.get_raw_u8(), data.l.get_raw_u8(), data.r.get_raw_u8());
-            if (debug_flag == DEBUG_CALIB)
-                data.printRaw();
+            // if (debug_flag == DEBUG_CALIB)
+
+            printf("sample_count: %d\n", data.sample_count);
+            printf("calibProgress: %d/%d\n", xLastWakeTime, end_time);
+            // data.printRaw();
             data.process_all_channel();
-            delay(10);
         }
 
-        setBoundsLR(LR_THRESHOLD);
-        setBoundsLP(LP_THRESHOLD);
-        setBoundsDot(DOT_THRESHOLD);
+        APDS.end();
 
-        xTaskCreate(dropDetectionTask, "dropDetectionTask", 2048, NULL, priority, &dropDetectionTaskHandle);
+        setBoundsLR(DEFAULT_LR_THRESHOLD);
+        setBoundsLP(DEFAULT_LP_THRESHOLD);
+        setBoundsDot(DEFAULT_DOT_THRESHOLD);
+
+        // xTaskCreate(dropDetectionTask, "dropDetectionTask", TASK_STACK_SIZE, NULL, priority, &dropDetectionTaskHandle);
+
+        dropDetectionTaskHandle = xTaskCreateStatic(
+            dropDetectionTask,   // Task function
+            "dropDetectionTask", // Name of the task
+            TASK_STACK_SIZE,     // Stack size
+            NULL,                // Task parameter
+            priority,            // Priority
+            xStack,              // Stack
+            &xTaskBuffer         // Task control block
+        );
+
         if (debug_flag == DEBUG_INFO)
             Serial.println("Drop Detection Task Started");
     }
@@ -217,7 +238,41 @@ namespace APDS_DropSensor
         if (debug >= DEBUG_NONE && debug < DEBUG_MAX)
         {
             debug_flag = debug;
-            Serial.printf("Set debug flag: %d\n", debug);
+            switch (debug_flag)
+            {
+            case DEBUG_INFO:
+                Serial.println("Debug mode: INFO");
+                break;
+            case DEBUG_RAW:
+                Serial.println("Debug mode: RAW");
+                break;
+            case DEBUG_CALIB:
+                Serial.println("Debug mode: CALIB");
+                break;
+            case DEBUG_ZEROING:
+                Serial.println("Debug mode: ZEROING");
+                break;
+            case DEBUG_LOWPASS:
+                Serial.println("Debug mode: LOWPASS");
+                break;
+            case DEBUG_DOT:
+                Serial.println("Debug mode: DOT");
+                break;
+            case DEBUG_LR:
+                Serial.println("Debug mode: LR");
+                break;
+            case DEBUG_CROSSING_STATE_PRINT:
+                Serial.println("Debug mode: CROSSING_STATE_PRINT");
+                break;
+            case DEBUG_CORSSING_STATE_PLOT:
+                Serial.println("Debug mode: CROSSING_STATE_PLOT");
+                break;
+            case DEBUG_FREQ:
+                Serial.println("Debug mode: FREQ");
+                break;
+            default:
+                break;
+            }
         }
         else
             debug_flag = DEBUG_NONE;
