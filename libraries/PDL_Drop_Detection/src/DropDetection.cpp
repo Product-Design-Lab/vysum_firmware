@@ -9,8 +9,8 @@ namespace APDS_DropSensor
 {
     constexpr uint8_t LR_THRESHOLD = 4;
     constexpr uint8_t LP_THRESHOLD = 6;
-    constexpr uint8_t DOT_THRESHOLD = 5;
-    int _debounce_window_size = 50; // 10*20ms = 200ms
+    constexpr uint8_t DOT_THRESHOLD = 2.5;
+    int _debounce_window_size = 100; 
     int crossing_count_trig_threshhold = 2;
 
     APDS_Data data;
@@ -103,6 +103,7 @@ namespace APDS_DropSensor
                     drop_count++;
                     _debounce_sample_count = 0;
                     crossing_state.state = 0;
+                    data.printDot();
                     Serial.printf("crossing_count: dot:%d, lp:%d, lr:%d, total:%d, drop_count:%d\n", dot_crossing_count, lp_crossing_count, lr_crossing_count, total_crossing_count, drop_count);
                 }
 
