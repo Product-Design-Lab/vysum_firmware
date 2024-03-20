@@ -13,9 +13,9 @@ D13 - LED_GREEN
 ## Test_Rig Setup
 
 D0 - white button GPIO pull-up
-D1 - blue  button GPIO pull-up
+<!-- D1 - blue  button GPIO pull-up -->
 D2 - motor encoder A
 D3 - motor encoder B
-A1(same as D1) - motor current sense analog input
-D9 - motor PWM1
-D10 - motor PWM2
+<!-- A1(same as D1) - motor current sense analog input -->
+D8 - motor PWM1
+D9 - motor PWM2
