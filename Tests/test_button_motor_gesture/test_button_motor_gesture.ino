@@ -13,6 +13,118 @@ MotorController motor_controller(mp6550, encoder); // Pass references here
 AsyncButtonGroup button;
 uint8_t buttonState;
 
+typedef enum
+{
+  STATE_INIT,
+  STATE_GRIP,
+  STATE_RELEASE,
+  STATE_IDLE,
+  STATE_DISPENSE,
+  STATE_PAUSE,
+  STATE_RETRACT,
+  STATE_MAX
+} main_state_t;
+
+main_state_t main_state = STATE_INIT;
+
+void gripping()
+{
+  Serial.println("Gripping...");
+  motor_controller.setPwm(GRIP_PWM);
+  delay(1000);
+  while (fabs(motor_controller.getCurrentSpeed()) > STALL_THRESHOLD_SPEED)
+  {
+    delay(100);
+  }
+
+  Serial.println("Grip closed, Position reset.");
+  motor_controller.setPwm(0); // stop motor
+  motor_controller.setCurrentPosition(0);
+  motor_controller.setTargetPosition(0);
+}
+
+void releasing()
+{
+  Serial.println("Opening grip...");
+  float start_pos = motor_controller.getCurrentPosition();
+  motor_controller.setPwm(RELEASE_PWM);
+  delay(1000);
+  while (1)
+  {
+    if (fabs(motor_controller.getCurrentSpeed()) < 5)
+    {
+      Serial.println("Motor stalled, Grip opened");
+      break;
+    }
+    else if (fabs(motor_controller.getCurrentPosition() - start_pos) > 1000)
+    {
+      Serial.println("distance limit reached, Grip opened");
+
+      break;
+    }
+    else if (digitalRead(D0) == LOW)
+    {
+      Serial.println("Button pressed, stop Grip openening");
+      break;
+    }
+
+    delay(100);
+  }
+  motor_controller.setPwm(0);
+}
+
+void dispense()
+{
+  Serial.println("Dispensing...");
+  motor_controller.setTargetPosition(DISPENSE_MOTOR_ADVANCE);
+  delay(1000);
+  // wait for motor to reach target position or motor stall or drop detected
+  while (1)
+  {
+    float spd = motor_controller.getCurrentSpeed();
+    float pos = motor_controller.getCurrentPosition();
+    // Serial.printf("spd:%.2f, pos:%.2f\n", spd, pos);
+
+    if (fabs(spd) < 5)
+    {
+      Serial.println("Motor stalled");
+      break;
+    }
+    if (APDS_DropSensor::get_drop_count() > 0)
+    {
+      APDS_DropSensor::set_drop_count(0);
+      Serial.println("Drop detected");
+      break;
+    }
+    if (fabs(DISPENSE_MOTOR_ADVANCE - pos) < 100)
+    {
+      Serial.println("Motor reached target position");
+      break;
+    }
+    delay(100);
+  }
+}
+
+void retract()
+{
+  Serial.println("Retracting...");
+  motor_controller.setTargetPosition(0);
+  while (1)
+  {
+    float spd = motor_controller.getCurrentSpeed();
+    float pos = motor_controller.getCurrentPosition();
+    // Serial.printf("spd:%.2f, pos:%.2f\n", spd, pos);
+
+    if (fabs(spd) < 5)
+    {
+      Serial.println("Motor stopped");
+      break;
+    }
+    delay(100);
+  }
+  Serial.println("Retract complete.");
+}
+
 void setup()
 {
   Serial.begin(115200);
@@ -45,27 +157,27 @@ void setup()
   APDS_DropSensor::setCrossCountTrigThreshold(4);
 
   // wait for short press
-  Serial.println("short press to grip");
-  while (button.getState() != AsyncButtonGroup::BUTTON_SHORT_PRESS)
-  {
-    delay(100);
-  }
+  // Serial.println("short press to grip");
+  // while (button.getState() != AsyncButtonGroup::BUTTON_SHORT_PRESS)
+  // {
+  //   delay(100);
+  // }
 
-  // grip the bottle
-  Serial.println("Gripping...");
-  motor_controller.setPwm(GRIP_PWM);
-  delay(1000);
-  while (fabs(motor_controller.getCurrentSpeed()) > STALL_THRESHOLD_SPEED)
-  {
-    delay(100);
-  }
+  // // grip the bottle
+  // Serial.println("Gripping...");
+  // motor_controller.setPwm(GRIP_PWM);
+  // delay(1000);
+  // while (fabs(motor_controller.getCurrentSpeed()) > STALL_THRESHOLD_SPEED)
+  // {
+  //   delay(100);
+  // }
 
-  Serial.println("Grip closed, Position reset.");
-  motor_controller.setPwm(0); // stop motor
-  motor_controller.setCurrentPosition(0);
-  motor_controller.setTargetPosition(0);
+  // Serial.println("Grip closed, Position reset.");
+  // motor_controller.setPwm(0); // stop motor
+  // motor_controller.setCurrentPosition(0);
+  // motor_controller.setTargetPosition(0);
 
-  Serial.println("short press to dispense, long press to release");
+  // Serial.println("short press to dispense, long press to release");
 }
 
 // push button to start motor, drop sensor to reverse motor, long press to open grip
@@ -87,86 +199,142 @@ void loop()
   }
 
   buttonState = button.getState();
-
-  if (buttonState == AsyncButtonGroup::BUTTON_SHORT_PRESS)
+  // state transition
+  switch (main_state)
   {
-    Serial.println("Short press detected, Dispensing...");
-    APDS_DropSensor::resume();
-    APDS_DropSensor::set_drop_count(0);
-    motor_controller.setTargetPosition(DISPENSE_MOTOR_ADVANCE);
-    delay(1000);
-    // wait for motor to reach target position or motor stall or drop detected
-    while (1)
+  case STATE_INIT:
+    if (buttonState == AsyncButtonGroup::BUTTON_SHORT_PRESS)
     {
-      float spd = motor_controller.getCurrentSpeed();
-      float pos = motor_controller.getCurrentPosition();
-      // Serial.printf("spd:%.2f, pos:%.2f\n", spd, pos);
-
-      if (fabs(spd) < 5)
-      {
-        Serial.println("Motor stalled");
-        break;
-      }
-      if (APDS_DropSensor::get_drop_count() > 0)
-      {
-        APDS_DropSensor::set_drop_count(0);
-        Serial.println("Drop detected");
-        break;
-      }
-      if (fabs(DISPENSE_MOTOR_ADVANCE - pos) < 100)
-      {
-        Serial.println("Motor reached target position");
-        break;
-      }
-      delay(100);
+      main_state = STATE_GRIP;
     }
-
-    // APDS_DropSensor::pause();
-    motor_controller.setTargetPosition(0);
-    while (1)
+    else if (buttonState == AsyncButtonGroup::BUTTON_LONG_PRESS)
     {
-      float spd = motor_controller.getCurrentSpeed();
-      float pos = motor_controller.getCurrentPosition();
-      // Serial.printf("spd:%.2f, pos:%.2f\n", spd, pos);
-
-      if (fabs(spd) < 5)
-      {
-        Serial.println("Motor stopped");
-        break;
-      }
-      delay(100);
+      main_state = STATE_RELEASE;
     }
-    Serial.println("Dispense complete.");
-  }
-  else if (buttonState == AsyncButtonGroup::BUTTON_LONG_PRESS)
-  {
-    Serial.println("Long pressed detected, Opening grip...");
-    float start_pos = motor_controller.getCurrentPosition();
-    motor_controller.setPwm(RELEASE_PWM);
-    delay(1000);
-    while (1)
+    break;
+  case STATE_GRIP:
+    main_state = STATE_IDLE;
+    break;
+  case STATE_RELEASE:
+    main_state = STATE_INIT;
+    break;
+  case STATE_IDLE:
+    if (buttonState == AsyncButtonGroup::BUTTON_SHORT_PRESS)
     {
-      if (fabs(motor_controller.getCurrentSpeed()) < 5)
-      {
-        Serial.println("Motor stalled, Grip opened");
-        break;
-      }
-      else if (fabs(motor_controller.getCurrentPosition() - start_pos) > 1000)
-      {
-        Serial.println("distance limit reached, Grip opened");
-
-        break;
-      }
-      else if (digitalRead(D0) == LOW)
-      {
-        Serial.println("Button pressed, stop Grip openening");
-        break;
-      }
-
-      delay(100);
+      main_state = STATE_DISPENSE;
     }
-    motor_controller.setPwm(0);
+    else if (buttonState == AsyncButtonGroup::BUTTON_LONG_PRESS)
+    {
+      main_state = STATE_RELEASE;
+    }
+    break;
+  case STATE_DISPENSE:
+    main_state = STATE_RETRACT;
+    break;
+  case STATE_RETRACT:
+    main_state = STATE_IDLE;
+    break;
   }
 
+  switch (main_state)
+  {
+  // state action
+  case STATE_GRIP:
+    gripping();
+    break;
+  case STATE_RELEASE:
+    releasing();
+    break;
+  case STATE_DISPENSE:
+    dispense();
+    break;
+  case STATE_RETRACT:
+    retract();
+    break;
+  default:
+    break;
+  }
+
+  /*
+    if (buttonState == AsyncButtonGroup::BUTTON_SHORT_PRESS)
+    {
+      Serial.println("Short press detected, Dispensing...");
+      APDS_DropSensor::resume();//TODO: check ipause resume pair
+      APDS_DropSensor::set_drop_count(0);
+      motor_controller.setTargetPosition(DISPENSE_MOTOR_ADVANCE);
+      delay(1000);
+      // wait for motor to reach target position or motor stall or drop detected
+      while (1)
+      {
+        float spd = motor_controller.getCurrentSpeed();
+        float pos = motor_controller.getCurrentPosition();
+        // Serial.printf("spd:%.2f, pos:%.2f\n", spd, pos);
+
+        if (fabs(spd) < 5)
+        {
+          Serial.println("Motor stalled");
+          break;
+        }
+        if (APDS_DropSensor::get_drop_count() > 0)
+        {
+          APDS_DropSensor::set_drop_count(0);
+          Serial.println("Drop detected");
+          break;
+        }
+        if (fabs(DISPENSE_MOTOR_ADVANCE - pos) < 100)
+        {
+          Serial.println("Motor reached target position");
+          break;
+        }
+        delay(100);
+      }
+
+      // APDS_DropSensor::pause();
+      motor_controller.setTargetPosition(0);
+      while (1)
+      {
+        float spd = motor_controller.getCurrentSpeed();
+        float pos = motor_controller.getCurrentPosition();
+        // Serial.printf("spd:%.2f, pos:%.2f\n", spd, pos);
+
+        if (fabs(spd) < 5)
+        {
+          Serial.println("Motor stopped");
+          break;
+        }
+        delay(100);
+      }
+      Serial.println("Dispense complete.");
+    }
+    else if (buttonState == AsyncButtonGroup::BUTTON_LONG_PRESS)
+    {
+      Serial.println("Long pressed detected, Opening grip...");
+      float start_pos = motor_controller.getCurrentPosition();
+      motor_controller.setPwm(RELEASE_PWM);
+      delay(1000);
+      while (1)
+      {
+        if (fabs(motor_controller.getCurrentSpeed()) < 5)
+        {
+          Serial.println("Motor stalled, Grip opened");
+          break;
+        }
+        else if (fabs(motor_controller.getCurrentPosition() - start_pos) > 1000)
+        {
+          Serial.println("distance limit reached, Grip opened");
+
+          break;
+        }
+        else if (digitalRead(D0) == LOW)
+        {
+          Serial.println("Button pressed, stop Grip openening");
+          break;
+        }
+
+        delay(100);
+      }
+      motor_controller.setPwm(0);
+    }
+  */
   delay(200);
 }
