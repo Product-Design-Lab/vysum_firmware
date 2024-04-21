@@ -1,16 +1,13 @@
 // ArduinoJson - https://arduinojson.org
-// Copyright © 2014-2024, Benoit BLANCHON
+// Copyright © 2014-2023, Benoit BLANCHON
 // MIT License
 
 #include <ArduinoJson.h>
 #include <stdint.h>
 #include <catch.hpp>
 
-#include "Allocators.hpp"
-
 TEST_CASE("JsonArray::operator[]") {
-  SpyingAllocator spy;
-  JsonDocument doc(&spy);
+  DynamicJsonDocument doc(4096);
   JsonArray array = doc.to<JsonArray>();
 
   SECTION("Pad with null") {
@@ -68,7 +65,7 @@ TEST_CASE("JsonArray::operator[]") {
   }
 
   SECTION("nested array") {
-    JsonDocument doc2;
+    DynamicJsonDocument doc2(4096);
     JsonArray arr2 = doc2.to<JsonArray>();
 
     array[0] = arr2;
@@ -79,7 +76,7 @@ TEST_CASE("JsonArray::operator[]") {
   }
 
   SECTION("nested object") {
-    JsonDocument doc2;
+    DynamicJsonDocument doc2(4096);
     JsonObject obj = doc2.to<JsonObject>();
 
     array[0] = obj;
@@ -90,7 +87,7 @@ TEST_CASE("JsonArray::operator[]") {
   }
 
   SECTION("array subscript") {
-    JsonDocument doc2;
+    DynamicJsonDocument doc2(4096);
     JsonArray arr2 = doc2.to<JsonArray>();
     const char* str = "hello";
 
@@ -103,7 +100,7 @@ TEST_CASE("JsonArray::operator[]") {
 
   SECTION("object subscript") {
     const char* str = "hello";
-    JsonDocument doc2;
+    DynamicJsonDocument doc2(4096);
     JsonObject obj = doc2.to<JsonObject>();
 
     obj["x"] = str;
@@ -115,25 +112,20 @@ TEST_CASE("JsonArray::operator[]") {
 
   SECTION("should not duplicate const char*") {
     array[0] = "world";
-    REQUIRE(spy.log() == AllocatorLog{
-                             Allocate(sizeofPool()),
-                         });
+    const size_t expectedSize = JSON_ARRAY_SIZE(1);
+    REQUIRE(expectedSize == doc.memoryUsage());
   }
 
   SECTION("should duplicate char*") {
     array[0] = const_cast<char*>("world");
-    REQUIRE(spy.log() == AllocatorLog{
-                             Allocate(sizeofPool()),
-                             Allocate(sizeofString("world")),
-                         });
+    const size_t expectedSize = JSON_ARRAY_SIZE(1) + JSON_STRING_SIZE(5);
+    REQUIRE(expectedSize == doc.memoryUsage());
   }
 
   SECTION("should duplicate std::string") {
     array[0] = std::string("world");
-    REQUIRE(spy.log() == AllocatorLog{
-                             Allocate(sizeofPool()),
-                             Allocate(sizeofString("world")),
-                         });
+    const size_t expectedSize = JSON_ARRAY_SIZE(1) + JSON_STRING_SIZE(5);
+    REQUIRE(expectedSize == doc.memoryUsage());
   }
 
   SECTION("array[0].to<JsonObject>()") {
@@ -164,4 +156,19 @@ TEST_CASE("JsonArray::operator[]") {
     REQUIRE(std::string("world") == array[0]);
   }
 #endif
+}
+
+TEST_CASE("JsonArrayConst::operator[]") {
+  DynamicJsonDocument doc(4096);
+  JsonArray array = doc.to<JsonArray>();
+  array.add(0);
+
+  SECTION("int") {
+    array[0] = 123;
+    JsonArrayConst carr = array;
+
+    REQUIRE(123 == carr[0].as<int>());
+    REQUIRE(true == carr[0].is<int>());
+    REQUIRE(false == carr[0].is<bool>());
+  }
 }

@@ -1,16 +1,13 @@
 // ArduinoJson - https://arduinojson.org
-// Copyright © 2014-2024, Benoit BLANCHON
+// Copyright © 2014-2023, Benoit BLANCHON
 // MIT License
 
 #include <ArduinoJson.h>
 #include <stdint.h>
 #include <catch.hpp>
 
-#include "Allocators.hpp"
-
 TEST_CASE("JsonVariant::clear()") {
-  SpyingAllocator spy;
-  JsonDocument doc(&spy);
+  DynamicJsonDocument doc(4096);
   JsonVariant var = doc.to<JsonVariant>();
 
   SECTION("size goes back to zero") {
@@ -25,15 +22,5 @@ TEST_CASE("JsonVariant::clear()") {
     var.clear();
 
     REQUIRE(var.isNull() == true);
-  }
-
-  SECTION("releases owned string") {
-    var.set(std::string("hello"));
-    var.clear();
-
-    REQUIRE(spy.log() == AllocatorLog{
-                             Allocate(sizeofString("hello")),
-                             Deallocate(sizeofString("hello")),
-                         });
   }
 }

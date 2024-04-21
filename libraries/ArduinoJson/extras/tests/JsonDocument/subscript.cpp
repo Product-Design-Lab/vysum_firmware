@@ -1,12 +1,12 @@
 // ArduinoJson - https://arduinojson.org
-// Copyright © 2014-2024, Benoit BLANCHON
+// Copyright © 2014-2023, Benoit BLANCHON
 // MIT License
 
 #include <ArduinoJson.h>
 #include <catch.hpp>
 
 TEST_CASE("JsonDocument::operator[]") {
-  JsonDocument doc;
+  DynamicJsonDocument doc(4096);
   const JsonDocument& cdoc = doc;
 
   SECTION("object") {
@@ -37,7 +37,7 @@ TEST_CASE("JsonDocument::operator[]") {
 }
 
 TEST_CASE("JsonDocument automatically promotes to object") {
-  JsonDocument doc;
+  DynamicJsonDocument doc(4096);
 
   doc["one"]["two"]["three"] = 4;
 
@@ -45,7 +45,7 @@ TEST_CASE("JsonDocument automatically promotes to object") {
 }
 
 TEST_CASE("JsonDocument automatically promotes to array") {
-  JsonDocument doc;
+  DynamicJsonDocument doc(4096);
 
   doc[2] = 2;
 

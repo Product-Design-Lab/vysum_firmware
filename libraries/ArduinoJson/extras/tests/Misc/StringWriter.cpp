@@ -1,5 +1,5 @@
 // ArduinoJson - https://arduinojson.org
-// Copyright © 2014-2024, Benoit BLANCHON
+// Copyright © 2014-2023, Benoit BLANCHON
 // MIT License
 
 #include <Arduino.h>
@@ -139,9 +139,9 @@ TEST_CASE("Writer<custom_string>") {
 }
 
 TEST_CASE("serializeJson(doc, String)") {
-  JsonDocument doc;
+  StaticJsonDocument<1024> doc;
   doc["hello"] = "world";
-  ::String output = "erase me";
+  ::String output;
 
   SECTION("sufficient capacity") {
     serializeJson(doc, output);

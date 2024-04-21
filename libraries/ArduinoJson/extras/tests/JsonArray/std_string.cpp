@@ -1,5 +1,5 @@
 // ArduinoJson - https://arduinojson.org
-// Copyright © 2014-2024, Benoit BLANCHON
+// Copyright © 2014-2023, Benoit BLANCHON
 // MIT License
 
 #include <ArduinoJson.h>
@@ -12,7 +12,7 @@ static void eraseString(std::string& str) {
 }
 
 TEST_CASE("std::string") {
-  JsonDocument doc;
+  DynamicJsonDocument doc(4096);
   JsonArray array = doc.to<JsonArray>();
 
   SECTION("add()") {

@@ -1,11 +1,11 @@
 // ArduinoJson - https://arduinojson.org
-// Copyright © 2014-2024, Benoit BLANCHON
+// Copyright © 2014-2023, Benoit BLANCHON
 // MIT License
 
 #pragma once
 
 #include <ArduinoJson/Deserialization/deserialize.hpp>
-#include <ArduinoJson/Memory/ResourceManager.hpp>
+#include <ArduinoJson/Memory/MemoryPool.hpp>
 #include <ArduinoJson/MsgPack/endianess.hpp>
 #include <ArduinoJson/MsgPack/ieee754.hpp>
 #include <ArduinoJson/Polyfills/type_traits.hpp>
@@ -13,13 +13,14 @@
 
 ARDUINOJSON_BEGIN_PRIVATE_NAMESPACE
 
-template <typename TReader>
+template <typename TReader, typename TStringStorage>
 class MsgPackDeserializer {
  public:
-  MsgPackDeserializer(ResourceManager* resources, TReader reader)
-      : resources_(resources),
+  MsgPackDeserializer(MemoryPool* pool, TReader reader,
+                      TStringStorage stringStorage)
+      : pool_(pool),
         reader_(reader),
-        stringBuilder_(resources),
+        stringStorage_(stringStorage),
         foundSomething_(false) {}
 
   template <typename TFilter>
@@ -370,14 +371,14 @@ class MsgPackDeserializer {
     if (err)
       return err;
 
-    variant->setOwnedString(stringBuilder_.save());
+    variant->setString(stringStorage_.save());
     return DeserializationError::Ok;
   }
 
   DeserializationError::Code readString(size_t n) {
     DeserializationError::Code err;
 
-    stringBuilder_.startString();
+    stringStorage_.startString();
     for (; n; --n) {
       uint8_t c;
 
@@ -385,10 +386,10 @@ class MsgPackDeserializer {
       if (err)
         return err;
 
-      stringBuilder_.append(static_cast<char>(c));
+      stringStorage_.append(static_cast<char>(c));
     }
 
-    if (!stringBuilder_.isValid())
+    if (!stringStorage_.isValid())
       return DeserializationError::NoMemory;
 
     return DeserializationError::Ok;
@@ -419,7 +420,7 @@ class MsgPackDeserializer {
 
     bool allowArray = filter.allowArray();
 
-    ArrayData* array;
+    CollectionData* array;
     if (allowArray) {
       ARDUINOJSON_ASSERT(variant != 0);
       array = &variant->toArray();
@@ -427,21 +428,21 @@ class MsgPackDeserializer {
       array = 0;
     }
 
-    TFilter elementFilter = filter[0U];
+    TFilter memberFilter = filter[0U];
 
     for (; n; --n) {
       VariantData* value;
 
-      if (elementFilter.allow()) {
+      if (memberFilter.allow()) {
         ARDUINOJSON_ASSERT(array != 0);
-        value = array->addElement(resources_);
+        value = array->addElement(pool_);
         if (!value)
           return DeserializationError::NoMemory;
       } else {
         value = 0;
       }
 
-      err = parseVariant(value, elementFilter, nestingLimit.decrement());
+      err = parseVariant(value, memberFilter, nestingLimit.decrement());
       if (err)
         return err;
     }
@@ -472,7 +473,7 @@ class MsgPackDeserializer {
     if (nestingLimit.reached())
       return DeserializationError::TooDeep;
 
-    ObjectData* object;
+    CollectionData* object;
     if (filter.allowObject()) {
       ARDUINOJSON_ASSERT(variant != 0);
       object = &variant->toObject();
@@ -485,7 +486,7 @@ class MsgPackDeserializer {
       if (err)
         return err;
 
-      JsonString key = stringBuilder_.str();
+      JsonString key = stringStorage_.str();
       TFilter memberFilter = filter[key.c_str()];
       VariantData* member;
 
@@ -493,11 +494,16 @@ class MsgPackDeserializer {
         ARDUINOJSON_ASSERT(object != 0);
 
         // Save key in memory pool.
-        auto savedKey = stringBuilder_.save();
+        // This MUST be done before adding the slot.
+        key = stringStorage_.save();
 
-        member = object->addMember(savedKey, resources_);
-        if (!member)
+        VariantSlot* slot = object->addSlot(pool_);
+        if (!slot)
           return DeserializationError::NoMemory;
+
+        slot->setKey(key);
+
+        member = slot->data();
       } else {
         member = 0;
       }
@@ -548,9 +554,9 @@ class MsgPackDeserializer {
     return skipBytes(size + 1U);
   }
 
-  ResourceManager* resources_;
+  MemoryPool* pool_;
   TReader reader_;
-  StringBuilder stringBuilder_;
+  TStringStorage stringStorage_;
   bool foundSomething_;
 };
 
@@ -559,27 +565,20 @@ ARDUINOJSON_END_PRIVATE_NAMESPACE
 ARDUINOJSON_BEGIN_PUBLIC_NAMESPACE
 
 // Parses a MessagePack input and puts the result in a JsonDocument.
-// https://arduinojson.org/v7/api/msgpack/deserializemsgpack/
-template <typename TDestination, typename... Args>
-typename detail::enable_if<
-    detail::is_deserialize_destination<TDestination>::value,
-    DeserializationError>::type
-deserializeMsgPack(TDestination&& dst, Args&&... args) {
+// https://arduinojson.org/v6/api/msgpack/deserializemsgpack/
+template <typename... Args>
+DeserializationError deserializeMsgPack(JsonDocument& doc, Args&&... args) {
   using namespace detail;
-  return deserialize<MsgPackDeserializer>(detail::forward<TDestination>(dst),
-                                          detail::forward<Args>(args)...);
+  return deserialize<MsgPackDeserializer>(doc, detail::forward<Args>(args)...);
 }
 
 // Parses a MessagePack input and puts the result in a JsonDocument.
-// https://arduinojson.org/v7/api/msgpack/deserializemsgpack/
-template <typename TDestination, typename TChar, typename... Args>
-typename detail::enable_if<
-    detail::is_deserialize_destination<TDestination>::value,
-    DeserializationError>::type
-deserializeMsgPack(TDestination&& dst, TChar* input, Args&&... args) {
+// https://arduinojson.org/v6/api/msgpack/deserializemsgpack/
+template <typename TChar, typename... Args>
+DeserializationError deserializeMsgPack(JsonDocument& doc, TChar* input,
+                                        Args&&... args) {
   using namespace detail;
-  return deserialize<MsgPackDeserializer>(detail::forward<TDestination>(dst),
-                                          input,
+  return deserialize<MsgPackDeserializer>(doc, input,
                                           detail::forward<Args>(args)...);
 }
 
