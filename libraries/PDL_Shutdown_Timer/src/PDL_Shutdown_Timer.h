@@ -36,3 +36,6 @@ void PDL_Shutdown_Timer_set_debug(uint8_t debug);
 
 // Shutdown the system
 void PDL_Shutdown_Timer_system_shutdown();
+
+//put system to sleep
+void PDL_Shutdown_Timer_system_sleep();

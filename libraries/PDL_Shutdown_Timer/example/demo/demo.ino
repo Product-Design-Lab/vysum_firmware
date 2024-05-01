@@ -1,7 +1,7 @@
 #include "PDL_Shutdown_Timer.h"
 #include "Adafruit_TinyUSB.h"
 
-#define LED_PIN 13 // Define the pin where the LED is connected
+#define LED_PIN LED_GREEN // Define the pin where the LED is connected
 
 void setup()
 {
@@ -14,6 +14,7 @@ void setup()
 
     // Set up the LED pin as an output
     pinMode(LED_PIN, OUTPUT);
+    digitalWrite(LED_PIN, HIGH);
 
     PDL_Shutdown_Timer_set_debug(PDL_Shutdown_Timer_Debug_ON);
 
@@ -30,10 +31,11 @@ void setup()
     PDL_Shutdown_Timer_start();
 
     // Indicate the system is alive
-    digitalWrite(LED_PIN, HIGH); // Turn on the LED
+    digitalWrite(LED_PIN, LOW); // Turn on the LED
 }
 
 void loop()
 {
-    // Nothing to do here, the timer will handle shutdown
+    digitalWrite(LED_PIN, !digitalRead(LED_PIN));
+    delay(100);
 }
