@@ -1,11 +1,13 @@
 import argparse
 import json
 import os
-import shutil
+import sys
+import logging
 
+# Set up basic configuration for logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 CONFIG_FILENAME = "config.json"
-
 DEFAULT_CONFIG = {
     "name": "PDL",
     "email": "name@example.com",
@@ -14,101 +16,90 @@ DEFAULT_CONFIG = {
 
 def init_config():
     if os.path.exists(CONFIG_FILENAME):
-        print("Config file already exists")
+        logging.info("Config file already exists")
         return
 
-    with open(CONFIG_FILENAME, "w") as f:
-        json.dump(DEFAULT_CONFIG, f, indent=4)
-
-    print("Config file created")
+    try:
+        with open(CONFIG_FILENAME, "w") as f:
+            json.dump(DEFAULT_CONFIG, f, indent=4)
+        logging.info("Config file created")
+    except IOError as e:
+        logging.error(f"Failed to create config file: {e}")
 
 def _set_config(key, val):
     if not os.path.exists(CONFIG_FILENAME):
-        print("Config file does not exist")
+        logging.error("Config file does not exist")
         return
 
-    with open(CONFIG_FILENAME, "r") as f:
-        config = json.load(f)
+    try:
+        with open(CONFIG_FILENAME, "r") as f:
+            config = json.load(f)
+    except (IOError, json.JSONDecodeError) as e:
+        logging.error(f"Failed to read the config file: {e}")
+        return
 
     config[key] = val
 
-    with open(CONFIG_FILENAME, "w") as f:
-        json.dump(config, f, indent=4)
-
-    print(f"Config updated: {key} = {val}")
+    try:
+        with open(CONFIG_FILENAME, "w") as f:
+            json.dump(config, f, indent=4)
+        logging.info(f"Config updated: {key} = {val}")
+    except IOError as e:
+        logging.error(f"Failed to write to the config file: {e}")
 
 def create_new_library(name):
-    # check input is string
     if not isinstance(name, str):
-        print("Library name must be a string")
+        logging.error("Library name must be a string")
         return
 
-    # read lib_path from file
-
-    config = {}
     try:
         with open(CONFIG_FILENAME, "r") as f:
-            try:
-                config = json.load(f)
-                if ("lib_path" not in config):
-                    print("lib_path not set")
-                    return
-            except json.JSONDecodeError:
-                print("Config file is not valid JSON")
-                return
+            config = json.load(f)
     except FileNotFoundError:
-        print("Config file does not exist")
+        logging.error("Config file does not exist")
+        return
+    except json.JSONDecodeError:
+        logging.error("Config file is not valid JSON")
         return
 
-    # check for name collision
+    if "lib_path" not in config:
+        logging.error("lib_path not set in config")
+        return
+
     lib_path = config["lib_path"]
     new_library_path = os.path.join(lib_path, name)
     if os.path.exists(new_library_path):
-        print("Library with same name already exists")
+        logging.error("Library with the same name already exists")
         return
 
-    # create the .cpp and .h files
-    src_path = os.path.join(new_library_path, "src")
-    os.makedirs(src_path)
-    with open(os.path.join(src_path, f"{name}.h"), "w") as f:
-        f.write(f'#pragma once\n\n')
-    with open(os.path.join(src_path, f"{name}.cpp"), "w") as f:
-        f.write(f'#include "{name}.h"\n\n')
+    try:
+        os.makedirs(os.path.join(new_library_path, "src"))
+        os.makedirs(os.path.join(new_library_path, "example", "demo"))
+    except OSError as e:
+        logging.error(f"Failed to create directories: {e}")
+        return
 
-    # create example directory
-    example_path = os.path.join(new_library_path, "example", "demo")
-    os.makedirs(example_path)
-    with open(os.path.join(example_path, "demo.ino"), "w") as f:
-        f.write(f'#include <Arduino.h>\n')
-        f.write(f'#include <{name}.h>\n\n')
-        f.write('void setup() \n{\n\n}\n')
-        f.write('void loop() \n{\n\n}\n')
+    file_structure = {
+        os.path.join("src", f"{name}.h"): '#pragma once\n\n',
+        os.path.join("src", f"{name}.cpp"): f'#include "{name}.h"\n\n',
+        os.path.join("example", "demo", "demo.ino"): 
+            '#include <Arduino.h>\n#include <{0}.h>\n\nvoid setup() \n{{\n\n}}\nvoid loop() \n{{\n\n}}\n'.format(name),
+        "library.properties": 
+            f'name={name}\nversion=0.0.0\nauthor={config["name"]}\nmaintainer={config["name"]} <{config["email"]}>\n'
+            'sentence=Short description of the library\nparagraph=Longer description of the library\ncategory=\nurl=http://example.com\n',
+        "keywords.txt": f'{name} KEYWORD1\n',
+        "README.md": f'# {name}\n\n',
+        "LICENSE": 'License text\n'
+    }
 
-    # create library.properties file
-    with open(os.path.join(new_library_path, "library.properties"), "w") as f:
-        f.write(f'name={name}\n')
-        f.write(f'version=0.0.0\n')
-        f.write(f'author={config["name"]}\n')
-        f.write(f'maintainer={config["name"] } <{config["email"]}>\n')
-        f.write(f'sentence=Short description of the library\n')
-        f.write(f'paragraph=Longer description of the library\n')
-        f.write(f'category=\n')
-        f.write(f'url=http://example.com\n')
+    for file_path, content in file_structure.items():
+        try:
+            with open(os.path.join(new_library_path, file_path), "w") as f:
+                f.write(content)
+        except IOError as e:
+            logging.error(f"Failed to write file {file_path}: {e}")
 
-    # create keywords.txt file
-    with open(os.path.join(new_library_path, "keywords.txt"), "w") as f:
-        f.write(f'{name} KEYWORD1\n')
-
-    # create README.md file
-    with open(os.path.join(new_library_path, "README.md"), "w") as f:
-        f.write(f'# {name}\n\n')
-
-    # create lisense file
-    with open(os.path.join(new_library_path, "LICENSE"), "w") as f:
-        f.write(f'License text\n')
-    
-    # print new library structure
-    print(f"Library created at {new_library_path}")
+    logging.info(f"Library created at {new_library_path}")
 
 def config_name(name):
     _set_config("name", name)
@@ -123,16 +114,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="PDL Development Tools")
     subparsers = parser.add_subparsers(dest="command")
 
-    init_config_parser = subparsers.add_parser(
-        "init_config", help="Initialize the config file")
+    subparsers.add_parser("init_config", help="Initialize the config file")
+    library_parser = subparsers.add_parser("create_new_library", help="Initialize a new library")
+    library_parser.add_argument("name", help="Name of the library")
 
-    # python dev_tools.py create_new_library "library_name"
-    init_library_parser = subparsers.add_parser(
-        "create_new_library", help="Initialize a new library")
-    init_library_parser.add_argument("name", help="Name of the library")
-
-    config_parser = subparsers.add_parser(
-        "config", help="Set a configuration value")
+    config_parser = subparsers.add_parser("config", help="Set a configuration value")
     config_parser.add_argument("key", choices=["name", "email", "lib_path"])
     config_parser.add_argument("value")
 
@@ -149,8 +135,5 @@ if __name__ == "__main__":
             config_email(args.value)
         elif args.key == "lib_path":
             config_lib_path(args.value)
-        else:
-            print("Invalid key")
     else:
         parser.print_help()
-
