@@ -7,7 +7,10 @@ import logging
 # Set up basic configuration for logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-CONFIG_FILENAME = "config.json"
+# Determine the directory where the script is located
+script_dir = os.path.dirname(os.path.abspath(__file__))
+CONFIG_FILENAME = os.path.join(script_dir, "config.json")
+
 DEFAULT_CONFIG = {
     "name": "PDL",
     "email": "name@example.com",
@@ -28,7 +31,8 @@ def init_config():
 
 def _set_config(key, val):
     if not os.path.exists(CONFIG_FILENAME):
-        logging.error("Config file does not exist")
+        logging.error("Config file does not exist, creating default config file")
+        init_config()
         return
 
     try:
@@ -65,9 +69,15 @@ def create_new_library(name):
     if "lib_path" not in config:
         logging.error("lib_path not set in config")
         return
-
+    
+    # add lib_path after script_dir
     lib_path = config["lib_path"]
+
+    if not os.path.isabs(lib_path):
+        lib_path = os.path.normpath(os.path.join(script_dir, lib_path))
+
     new_library_path = os.path.join(lib_path, name)
+
     if os.path.exists(new_library_path):
         logging.error("Library with the same name already exists")
         return

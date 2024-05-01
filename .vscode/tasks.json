@@ -1,0 +1,82 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Create Arduino Library",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "${workspaceFolder}/scripts/dev_tools.py",
+                "create_new_library",
+                "\"${input:libraryName}\""
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            }
+        },
+        {
+            "label": "Config Name",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "${workspaceFolder}/scripts/dev_tools.py",
+                "config",
+                "name",
+                "\"${input:configName}\""
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Config Email",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "${workspaceFolder}/scripts/dev_tools.py",
+                "config",
+                "email",
+                "\"${input:configEmail}\""
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Config Library Path",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "${workspaceFolder}/scripts/dev_tools.py",
+                "config",
+                "lib_path",
+                "\"${input:configLibPath}\""
+            ],
+            "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        {
+            "id": "libraryName",
+            "type": "promptString",
+            "description": "Enter the name of the new library:"
+        },
+        {
+            "id": "configName",
+            "type": "promptString",
+            "description": "Enter the new configuration name:"
+        },
+        {
+            "id": "configEmail",
+            "type": "promptString",
+            "description": "Enter the new configuration email:"
+        },
+        {
+            "id": "configLibPath",
+            "type": "promptString",
+            "description": "Enter the new library path:"
+        }
+    ]
+}
