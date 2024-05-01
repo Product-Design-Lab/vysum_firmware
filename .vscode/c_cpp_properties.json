@@ -9,7 +9,29 @@
                 "${env.USERPROFILE}/AppData/Local/Arduino15/packages/Seeeduino/hardware/nrf52/*/cores/nRF5/",
                 "${env.USERPROFILE}/AppData/Local/Arduino15/packages/Seeeduino/hardware/nrf52/*/libraries/**",
                 "${env.USERPROFILE}/AppData/Local/Arduino15/packages/Seeeduino/hardware/nrf52/*/variants/*"
-            ],
+            ]
+        },
+        {
+            "name": "ubuntu",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "$HOME/.arduino15/packages/Seeeduino/hardware/nrf52/*/cores/nRF5/freertos/config/",
+                "$HOME/.arduino15/packages/Seeeduino/hardware/nrf52/*/cores/nRF5/freertos/Source/include/",
+                "$HOME/.arduino15/packages/Seeeduino/hardware/nrf52/*/cores/nRF5/",
+                "$HOME/.arduino15/packages/Seeeduino/hardware/nrf52/*/libraries/**",
+                "$HOME/.arduino15/packages/Seeeduino/hardware/nrf52/*/variants/*"
+            ]
+        },
+        {
+            "name": "mac",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "$HOME/Library/Arduino15/packages/Seeeduino/hardware/nrf52/*/cores/nRF5/freertos/config/",
+                "$HOME/Library/Arduino15/packages/Seeeduino/hardware/nrf52/*/cores/nRF5/freertos/Source/include/",
+                "$HOME/Library/Arduino15/packages/Seeeduino/hardware/nrf52/*/cores/nRF5/",
+                "$HOME/Library/Arduino15/packages/Seeeduino/hardware/nrf52/*/libraries/**",
+                "$HOME/Library/Arduino15/packages/Seeeduino/hardware/nrf52/*/variants/*"
+            ]
         }
     ],
     "version": 4,
