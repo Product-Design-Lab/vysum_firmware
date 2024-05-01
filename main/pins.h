@@ -18,14 +18,14 @@
 #define PIN_LED_RED LED_RED
 #define PIN_LED_GREEN LED_GREEN
 #define PIN_LED_BLUE LED_BLUE
-#define PIN_I2C_SDA D4
-#define PIN_I2C_SCL D5
-#define PIN_SERIAL_TX D6
-#define PIN_SERIAL_RX D7
 
-#define PIN_BUTTON_WHITE D0
-#define PIN_BUTTON_BLUE D1
+#define PIN_BUTTON          D0
+#define PIN_VISEN           D1
 #define PIN_MOTOR_ENCODER_A D2
 #define PIN_MOTOR_ENCODER_B D3
-#define PIN_MOTOR_PWM D9
-#define PIN_MOTOR_DIR D10
+#define PIN_I2C_SDA         D4
+#define PIN_I2C_SCL         D5
+#define PIN_POWER_EN        D6
+#define PIN_MOTOR_PWM_1     D8
+#define PIN_MOTOR_PWM_2     D9
+#define PIN_LED_DATA        D10
