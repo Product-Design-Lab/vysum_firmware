@@ -25,7 +25,7 @@ namespace APDS_DropSensor
     eTaskState task_state;
 
     // Caution: Long delay will cause APDS9960 buffer overflow, which will cause the sensor to stop working
-    TickType_t X_FREQUENCY = pdMS_TO_TICKS(70); // task loop delay 20ms,
+    TickType_t X_FREQUENCY = pdMS_TO_TICKS(20); // task loop delay 20ms,
     TickType_t xLastWakeTime = 0;
 
     static void printDebug()
