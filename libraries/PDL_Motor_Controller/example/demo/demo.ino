@@ -5,6 +5,16 @@ MotorDriver mp6550;
 HwRotaryEncoder encoder; 
 MotorController motor_controller(mp6550, encoder); // Pass references here
 
+void pos_reached_cbs()
+{
+    Serial.println("MAIN: Position reached");
+}
+
+void motor_stalled_cbs()
+{
+    Serial.println("MAIN: Motor stalled");
+}
+
 void setup()
 {
     Serial.begin(115200);
@@ -23,9 +33,11 @@ void setup()
     encoder.start();
 
     motor_controller.setPositionLimits(20000, -20000);
-    motor_controller.setGain(-0.005);
-    motor_controller.setDebug(true);
+    motor_controller.setGain(0.005);
+    motor_controller.setDebug(MotorController::DEBUG_OFF);
     motor_controller.setLoopDelay(50);
+    motor_controller.setOnTargetReach(pos_reached_cbs);
+    motor_controller.setOnMotorStall(motor_stalled_cbs);
     motor_controller.start();
 }
 
