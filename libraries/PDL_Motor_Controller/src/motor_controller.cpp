@@ -1,6 +1,11 @@
 #include "motor_controller.h"
 
-void MotorController::setPositionLimits(const int32_t max_pos, const int32_t min_pos)
+MotorController::MotorController(MotorDriver &motor, HwRotaryEncoder &encoder)
+    : motor(motor), encoder(encoder) {}
+
+MotorController::~MotorController() {}
+
+void MotorController::setPositionLimits(int32_t max_pos, int32_t min_pos)
 {
     if (max_pos < min_pos)
     {
@@ -14,62 +19,62 @@ void MotorController::setPositionLimits(const int32_t max_pos, const int32_t min
     }
 }
 
-void MotorController::setTargetPosition(const int32_t target_position)
+void MotorController::setTargetPosition(int32_t target_position)
 {
-    int32_t _target_position = target_position;
     if (target_position > max_pos)
     {
-        _target_position = max_pos;
+        this->target_position = max_pos;
     }
     else if (target_position < min_pos)
     {
-        _target_position = min_pos;
+        this->target_position = min_pos;
     }
-    this->target_position = _target_position;
+    else
+    {
+        this->target_position = target_position;
+    }
     control_mode = CONTROL_POSITION;
 
     onTargetReachCalled = false;
     onMotorStallCalled = false;
 }
 
-void MotorController::setCurrentPosition(const int32_t current_position)
+void MotorController::setCurrentPosition(int32_t current_position)
 {
     encoder.writeAbs(current_position);
     this->current_position = current_position;
 }
 
-void MotorController::setGain(const float Kp, const float Ki, const float Kd)
+void MotorController::setGain(float Kp, float Ki, float Kd)
 {
     this->Kp = Kp;
     this->Ki = Ki;
     this->Kd = Kd;
 }
 
-void MotorController::setPwm(float u)
+void MotorController::setPwm(float control_signal)
 {
-    this->u = u;
+    this->control_signal = control_signal;
     control_mode = CONTROL_PWM;
     onTargetReachCalled = false;
     onMotorStallCalled = false;
 }
 
-void MotorController::printDebug()
+void MotorController::printDebug() const
 {
-    // print mode
     switch (debug_option)
     {
     case DEBUG_OFF:
         return;
     case DEBUG_CONTROL_LOOP:
-
         if (control_mode == CONTROL_PWM)
         {
-            Serial.printf("pwm mode, current_pos:%ld, current_spd:%6.3f, pwm:%d", current_position, current_speed, u);
+            Serial.printf("PWM mode, current_pos:%ld, current_speed:%6.3f, pwm:%3.3f", current_position, current_speed, control_signal);
         }
         else if (control_mode == CONTROL_POSITION)
         {
-            Serial.printf("pos mode, target_pos:%ld, current_pos:%ld, err_kp:%3.3f, err_ki:%3.3f, err_kd:%3.3f, u:%3.3f",
-                          target_position, current_position, error, error_integral, error_derivative, u);
+            Serial.printf("Position mode, target_pos:%ld, current_pos:%ld, error:%3.3f, integral:%3.3f, derivative:%3.3f, control_signal:%3.3f",
+                          target_position, current_position, error, error_integral, error_derivative, control_signal);
             Serial.printf(", speed:%6.3f", current_speed);
         }
         break;
@@ -84,10 +89,9 @@ void MotorController::printDebug()
         }
         break;
     case DEBUG_CURRENT:
-
         if (motor.hasCurrentPin())
         {
-            Serial.printf(", I:%d, (%.3fmA)", motor.getCurrent(), motor.getCurrent_mA());
+            Serial.printf("Current: %d (%.3fmA)", motor.getCurrent(), motor.getCurrent_mA());
         }
         break;
     default:
@@ -103,10 +107,9 @@ void MotorController::motorTaskWrapper(void *parameter)
 
 void MotorController::checkMotorStall()
 {
-    // stall condition: position not reached, pwm !=0, speed at 0 for stall_threshold_ms milli sec
     static uint32_t stall_start_tick = 0;
 
-    if (target_reached || current_speed != 0 || u == 0)
+    if (target_reached || current_speed != 0 || control_signal == 0)
     {
         motor_stalled = false;
         stall_start_tick = 0;
@@ -126,12 +129,11 @@ void MotorController::checkMotorStall()
 
 void MotorController::checkTargetReach()
 {
-    target_reached = (bool)(abs(target_position - current_position) < position_torlerance);
+    target_reached = abs(target_position - current_position) < position_tolerance;
 }
 
-void MotorController::pid_position_control()
+void MotorController::pidPositionControl()
 {
-    // use PID control
     error = target_position - current_position;
 
     if (Ki != 0)
@@ -140,45 +142,43 @@ void MotorController::pid_position_control()
         error_integral = fmin(fmax(error_integral, -abs(1 / Ki)), abs(1 / Ki)); // anti-windup
     }
 
-    static float prev_error = error;
+    static float prev_error = 0;
     error_derivative = error - prev_error;
     prev_error = error;
 
-    u = Kp * error + Ki * error_integral + Kd * error_derivative;
-    // Serial.printf("Kp:%3.3f, Ki:%3.3f, Kd:%3.3f, error:%3.3f, error_integral:%3.3f, error_derivative:%3.3f, u:%3.3f\n", Kp, Ki, Kd, error, error_integral, error_derivative, u);
+    control_signal = Kp * error + Ki * error_integral + Kd * error_derivative;
+    control_signal = fmin(fmax(control_signal, -1), 1); // normalize control_signal to [-1,1]
 
-    u = fmin(fmax(u, -1), 1); // normalize u to [-1,1]
-    motor.runMotor(u);
+    motor.runMotor(control_signal);
 }
 
 void MotorController::motorTask()
 {
-    TickType_t xLastWakeTime;
-    xLastWakeTime = xTaskGetTickCount();
+    TickType_t xLastWakeTime = xTaskGetTickCount();
     while (1)
     {
-        current_speed = 1.0 * (encoder.read()); // need to run at fixed interval
+        current_speed = encoder.read(); // needs to run at a fixed interval
         current_position = encoder.readAbs();
 
         if (control_mode == CONTROL_PWM)
         {
-            motor.runMotor(u);
+            motor.runMotor(control_signal);
         }
         else if (control_mode == CONTROL_POSITION)
         {
-            pid_position_control();
+            pidPositionControl();
         }
 
         checkTargetReach();
         checkMotorStall();
 
-        if (target_reached && (onTargetReach != NULL) && !onTargetReachCalled)
+        if (target_reached && onTargetReach && !onTargetReachCalled)
         {
             onTargetReachCalled = true;
             onTargetReach();
         }
 
-        if (motor_stalled && (onMotorStall != NULL) && !onMotorStallCalled)
+        if (motor_stalled && onMotorStall && !onMotorStallCalled)
         {
             onMotorStallCalled = true;
             onMotorStall();
@@ -194,7 +194,15 @@ void MotorController::start(uint8_t priority)
     xTaskCreate(motorTaskWrapper, "motorTask", 2048, this, priority, &motorTaskHandle);
 }
 
-// callback functions
+void MotorController::pause()
+{
+    if (motorTaskHandle != NULL)
+    {
+        vTaskDelete(motorTaskHandle);
+        motorTaskHandle = NULL;
+    }
+}
+
 void MotorController::setOnMotorStall(MotorEventCallback callback)
 {
     onMotorStall = callback;

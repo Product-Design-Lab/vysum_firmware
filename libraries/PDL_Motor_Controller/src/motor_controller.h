@@ -8,12 +8,12 @@
 class MotorController
 {
 private:
-    enum control_mode_e
+    enum ControlMode
     {
         CONTROL_PWM,
         CONTROL_POSITION
     };
-    control_mode_e control_mode = CONTROL_PWM;
+    ControlMode control_mode = CONTROL_PWM;
 
     MotorDriver &motor;
     HwRotaryEncoder &encoder;
@@ -23,7 +23,7 @@ private:
     int32_t target_position = 0;
     int32_t current_position = 0;
 
-    uint32_t position_torlerance = 100; // position within this range is considered reached
+    uint32_t position_tolerance = 100; // position within this range is considered reached
     bool target_reached = false;
     bool onTargetReachCalled = false;
 
@@ -34,7 +34,7 @@ private:
     float current_speed = 0;
     float Kp = 0, Ki = 0, Kd = 0;
     float error = 0, error_integral = 0, error_derivative = 0;
-    float u = 0;
+    float control_signal = 0;
     TickType_t xFrequency = 10; // loop delay in Ticks, note that 1 Tick is not always 1 ms, refer to FreeRTOSconfig.h
     uint8_t debug_option = 0;
 
@@ -42,10 +42,10 @@ private:
     void motorTask();
     void checkTargetReach();
     void checkMotorStall();
-    void pid_position_control();
+    void pidPositionControl();
 
 public:
-    enum debug_status_e
+    enum DebugStatus
     {
         DEBUG_OFF,
         DEBUG_CURRENT,
@@ -54,33 +54,32 @@ public:
         DEBUG_MAX,
     };
 
-    MotorController(MotorDriver &motor, HwRotaryEncoder &encoder) : motor(motor), encoder(encoder){};
-    ~MotorController(){};
+    MotorController(MotorDriver &motor, HwRotaryEncoder &encoder);
+    ~MotorController();
 
-    void setPositionLimits(const int32_t max_pos, const int32_t min_pos); // encoder count value
-    void setTargetPosition(const int32_t target_position);
-    void setPositonTolerance(const uint32_t position_torlerance) { this->position_torlerance = position_torlerance; }
+    void setPositionLimits(int32_t max_pos, int32_t min_pos); // encoder count value
+    void setTargetPosition(int32_t target_position);
+    void setPositionTolerance(uint32_t position_tolerance);
 
-    void setStallThreshold(const uint32_t stall_threshold_ms) { this->stall_threshold_ms = stall_threshold_ms; }
+    void setStallThreshold(uint32_t stall_threshold_ms);
 
-    int32_t getCurrentPosition() { return current_position; };
-    void setCurrentPosition(const int32_t current_position);
-    float getCurrentSpeed() { return current_speed; };
-    bool isMotorStalled() { return motor_stalled; };
-    bool isTargetReached() { return target_reached; };
+    int32_t getCurrentPosition() const;
+    void setCurrentPosition(int32_t current_position);
+    float getCurrentSpeed() const;
+    bool isMotorStalled() const;
+    bool isTargetReached() const;
 
-    void setPwm(float u);
-    void setGain(const float Kp, const float Ki = 0.0, const float Kd = 0.0);
-    void setLoopDelay(const uint32_t delay_ms) { this->xFrequency = pdMS_TO_TICKS(delay_ms); };
-    void setDebug(const uint8_t debug) { this->debug_option = debug; };
-    void printDebug();
+    void setPwm(float control_signal);
+    void setGain(float Kp, float Ki = 0.0, float Kd = 0.0);
+    void setLoopDelay(uint32_t delay_ms);
+    void setDebug(uint8_t debug);
+    void printDebug() const;
 
     void start(uint8_t priority = 1);
     void pause();
 
     // Motor Event callbacks
-
-    typedef void (*MotorEventCallback)();
+    using MotorEventCallback = void (*)();
     MotorEventCallback onMotorStall = NULL;
     MotorEventCallback onTargetReach = NULL;
 
