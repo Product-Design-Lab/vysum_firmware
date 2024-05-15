@@ -3,12 +3,13 @@
 
 #define LED_PIN LED_GREEN // Define the pin where the LED is connected
 
-void setup()
-{
+// Create an instance of PDL_Shutdown_Timer
+PDL_Shutdown_Timer shutdownTimer;
+
+void setup() {
     // Initialize Serial for debugging outputs
     Serial.begin(115200);
-    while (!Serial)
-        ; // Wait for serial port to connect.
+    while (!Serial) ; // Wait for serial port to connect.
 
     Serial.println("Initializing system...");
 
@@ -16,26 +17,29 @@ void setup()
     pinMode(LED_PIN, OUTPUT);
     digitalWrite(LED_PIN, HIGH);
 
-    PDL_Shutdown_Timer_set_debug(PDL_Shutdown_Timer_Debug_ON);
+    // Set debug level
+    shutdownTimer.setDebug(PDL_Shutdown_Timer::DEBUG_ON);
 
     // Initialize the shutdown timer module
-    PDL_Shutdown_Timer_init();
+    shutdownTimer.init();
 
     // Set the timer's enable pin to the LED pin
-    // PDL_Shutdown_Timer_set_en_pin(2);
+    shutdownTimer.setEnPin(LED_PIN);
 
     // Set the shutdown duration (e.g., 5 seconds)
-    PDL_Shutdown_Timer_set_shutdown_time_sec(5);
+    shutdownTimer.setShutdownTimeSec(5);
 
     // Start the timer
-    PDL_Shutdown_Timer_start();
+    if (shutdownTimer.start() != pdPASS) {
+        Serial.println("Failed to start the shutdown timer");
+    }
 
     // Indicate the system is alive
     digitalWrite(LED_PIN, LOW); // Turn on the LED
 }
 
-void loop()
-{
+void loop() {
+    // Toggle the LED to show the system is running
     digitalWrite(LED_PIN, !digitalRead(LED_PIN));
     delay(100);
 }
