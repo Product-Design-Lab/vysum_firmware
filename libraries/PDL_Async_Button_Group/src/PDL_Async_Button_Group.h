@@ -4,11 +4,13 @@
 #include "FreeRTOS.h"
 #include "timers.h"
 
-#define MAX_PIN_NUM 2 // Need to manually add static ISR functions if this number is changed
+#define MAX_PIN_NUM 2
 
 class AsyncButtonGroup
 {
 public:
+    using ButtonCallback = void (*)();  // Define a function pointer type for callbacks
+
     enum ButtonState
     {
         BUTTON_IDLE,
@@ -33,6 +35,8 @@ private:
     uint8_t output_state;
 
     TimerHandle_t timerHandle;
+    ButtonCallback shortPressCallback; // Callback for short press
+    ButtonCallback longPressCallback;  // Callback for long press
 
     void gpioCallback();
     static void gpioCallbackInstance1();
@@ -55,6 +59,8 @@ public:
     void setIdleLogicLevel(bool logic_level);
     uint8_t getState(int *short_press_count, int *long_press_count);
     uint8_t getState();
-
     void init();
+
+    void setShortPressCallback(ButtonCallback callback); // Set short press callback
+    void setLongPressCallback(ButtonCallback callback);  // Set long press callback
 };

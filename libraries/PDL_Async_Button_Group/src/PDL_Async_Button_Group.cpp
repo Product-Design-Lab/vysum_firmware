@@ -20,7 +20,7 @@ AsyncButtonGroup::AsyncButtonGroup()
     long_press_count = 0;
     state = BUTTON_IDLE;
     output_state = BUTTON_IDLE;
-    timerHandle = xTimerCreate("ButtonTimer", pdMS_TO_TICKS(debounceTime), pdFALSE, (void *)idx, idx == 0 ? timerCallbackInstance1 : timerCallbackInstance2);
+    timerHandle = xTimerCreate("ButtonTimer", pdMS_TO_TICKS(debounceTime), pdFALSE, (void *)(intptr_t)idx, idx == 0 ? timerCallbackInstance1 : timerCallbackInstance2);
 }
 
 void AsyncButtonGroup::setPin(uint8_t pin, bool idle_logic_level)
@@ -77,6 +77,10 @@ void AsyncButtonGroup::gpioCallback()
     {
         short_press_count++;
         output_state = BUTTON_SHORT_PRESS;
+        if (shortPressCallback)
+        {
+            shortPressCallback(); // Call the callback
+        }
         setInitialState();
     }
     else if (state == BUTTON_LONG_PRESS)
@@ -172,4 +176,18 @@ void AsyncButtonGroup::setLongPressState()
     {
         portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
     }
+    if (longPressCallback)
+    {
+        longPressCallback(); // Call the callback
+    }
+}
+
+void AsyncButtonGroup::setShortPressCallback(ButtonCallback callback)
+{
+    shortPressCallback = callback;
+}
+
+void AsyncButtonGroup::setLongPressCallback(ButtonCallback callback)
+{
+    longPressCallback = callback;
 }
