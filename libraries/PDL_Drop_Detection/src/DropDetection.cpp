@@ -1,8 +1,6 @@
-#include "dropDetection.h"
-// FreeRTOS includes
+#include "DropDetection.h"
 #include "FreeRTOS.h"
 #include "task.h"
-
 #include "Adafruit_TinyUSB.h"
 
 namespace APDS_DropSensor
@@ -12,23 +10,24 @@ namespace APDS_DropSensor
     constexpr uint8_t DEFAULT_DOT_THRESHOLD = 2.5;
     constexpr uint32_t TASK_STACK_SIZE = 2048;
     constexpr uint8_t MAX_LOOP_DELAY_MS = 80;
+
     int _debounce_window_size = 100;
     int crossing_count_trig_threshhold = 2;
+    uint8_t debug_flag = DEBUG_INFO;
+    int drop_count = 0;
 
     APDS_Data data;
-    uint8_t debug_flag = DEBUG_INFO;
     APDS_Data::data_crossing_state_t crossing_state = {};
-    int drop_count = 0;
+
     StaticTask_t xTaskBuffer;
     StackType_t xStack[TASK_STACK_SIZE];
-    TaskHandle_t dropDetectionTaskHandle = NULL;
+    TaskHandle_t dropDetectionTaskHandle = nullptr;
     eTaskState task_state;
 
-    // Caution: Long delay will cause APDS9960 buffer overflow, which will cause the sensor to stop working
-    TickType_t X_FREQUENCY = pdMS_TO_TICKS(20); // task loop delay 20ms,
+    TickType_t X_FREQUENCY = pdMS_TO_TICKS(20); // Task loop delay 20ms
     TickType_t xLastWakeTime = 0;
 
-    static void printDebug()
+    void printDebug()
     {
         switch (debug_flag)
         {
@@ -53,23 +52,28 @@ namespace APDS_DropSensor
         case DEBUG_CROSSING_STATE_PRINT:
             data.printCrossingState(crossing_state.state);
             break;
-        case DEBUG_CORSSING_STATE_PLOT:
+        case DEBUG_CROSSING_STATE_PLOT:
             data.plotCrossingState(crossing_state.state);
             break;
         case DEBUG_FREQ:
             Serial.printf("xLastWakeTime=%d, sample_count=%d\n", xLastWakeTime, data.sample_count);
+            break;
         default:
             break;
         }
     }
 
-    static void dropDetectionTask(void *pvParameters)
+    void dropDetectionTask(void *pvParameters)
     {
-
         int _debounce_sample_count = 0;
-        APDS.begin();
+        if (!APDS.begin())
+        {
+            if (debug_flag == DEBUG_INFO)
+                Serial.println("Error initializing APDS-9960 sensor!");
+            vTaskDelete(nullptr);
+        }
 
-        while (1)
+        while (true)
         {
             vTaskDelayUntil(&xLastWakeTime, X_FREQUENCY);
 
@@ -83,49 +87,25 @@ namespace APDS_DropSensor
 
             if (_debounce_sample_count >= _debounce_window_size)
             {
-                // extract crossing state
-                // uint8_t dot_crossing_count = crossing_state.l.DOT_CROSS_UPPER_BOUND + crossing_state.l.DOT_CROSS_LOWER_BOUND +
-                //                              crossing_state.r.DOT_CROSS_UPPER_BOUND + crossing_state.r.DOT_CROSS_LOWER_BOUND;
-
                 uint8_t dot_crossing_count = crossing_state.u.DOT_CROSS_UPPER_BOUND + crossing_state.u.DOT_CROSS_LOWER_BOUND +
                                              crossing_state.d.DOT_CROSS_UPPER_BOUND + crossing_state.d.DOT_CROSS_LOWER_BOUND +
                                              crossing_state.l.DOT_CROSS_UPPER_BOUND + crossing_state.l.DOT_CROSS_LOWER_BOUND +
                                              crossing_state.r.DOT_CROSS_UPPER_BOUND + crossing_state.r.DOT_CROSS_LOWER_BOUND;
-
-                uint8_t lp_crossing_count = crossing_state.u.LP_CROSS_UPPER_BOUND + crossing_state.u.LP_CROSS_LOWER_BOUND +
-                                            crossing_state.d.LP_CROSS_UPPER_BOUND + crossing_state.d.LP_CROSS_LOWER_BOUND +
-                                            crossing_state.l.LP_CROSS_UPPER_BOUND + crossing_state.l.LP_CROSS_LOWER_BOUND +
-                                            crossing_state.r.LP_CROSS_UPPER_BOUND + crossing_state.r.LP_CROSS_LOWER_BOUND;
-
-                uint8_t lr_crossing_count = crossing_state.lr.RISE_OVER_UPPER_BOUND + crossing_state.lr.FALL_BELOW_UPPER_BOUND +
-                                            crossing_state.lr.RISE_OVER_LOWER_BOUND + crossing_state.lr.FALL_BELOW_LOWER_BOUND;
-
-                uint8_t total_crossing_count = __builtin_popcount((uint32_t)crossing_state.state);
 
                 if (dot_crossing_count > 2)
                 {
                     drop_count++;
                     _debounce_sample_count = 0;
                     crossing_state.state = 0;
-                    // data.printDot();
-                    // Serial.printf("crossing_count: dot:%d, lp:%d, lr:%d, total:%d, drop_count:%d\n", dot_crossing_count, lp_crossing_count, lr_crossing_count, total_crossing_count, drop_count);
                 }
-
-                // crossing_state.state = 0;
             }
         }
     }
 
     void init(uint32_t priority)
     {
-        if (priority < 1)
-        {
-            priority = 1;
-        }
-        else if (priority > configMAX_PRIORITIES - 1)
-        {
-            priority = configMAX_PRIORITIES - 1;
-        }
+        priority = std::clamp(priority, 1u, configMAX_PRIORITIES - 1);
+
         if (!Serial)
         {
             Serial.begin(115200);
@@ -135,6 +115,7 @@ namespace APDS_DropSensor
         {
             if (debug_flag == DEBUG_INFO)
                 Serial.println("Error initializing APDS-9960 sensor!");
+            return;
         }
         else
         {
@@ -143,15 +124,12 @@ namespace APDS_DropSensor
         }
 
         TickType_t end_time = xTaskGetTickCount() + pdMS_TO_TICKS(3000);
-        while (xLastWakeTime < end_time)
+        while (xTaskGetTickCount() < end_time)
         {
             vTaskDelayUntil(&xLastWakeTime, X_FREQUENCY);
             data.sample_count = APDS.gestureAvailable(data.u.get_raw_u8(), data.d.get_raw_u8(), data.l.get_raw_u8(), data.r.get_raw_u8());
-            // if (debug_flag == DEBUG_CALIB)
-
             printf("sample_count: %d\n", data.sample_count);
-            printf("calibProgress: %d/%d\n", xLastWakeTime, end_time);
-            // data.printRaw();
+            printf("calibProgress: %d/%d\n", xTaskGetTickCount(), end_time);
             data.process_all_channel();
         }
 
@@ -161,13 +139,11 @@ namespace APDS_DropSensor
         setBoundsLP(DEFAULT_LP_THRESHOLD);
         setBoundsDot(DEFAULT_DOT_THRESHOLD);
 
-        // xTaskCreate(dropDetectionTask, "dropDetectionTask", TASK_STACK_SIZE, NULL, priority, &dropDetectionTaskHandle);
-
         dropDetectionTaskHandle = xTaskCreateStatic(
             dropDetectionTask,   // Task function
             "dropDetectionTask", // Name of the task
             TASK_STACK_SIZE,     // Stack size
-            NULL,                // Task parameter
+            nullptr,             // Task parameter
             priority,            // Priority
             xStack,              // Stack
             &xTaskBuffer         // Task control block
@@ -190,8 +166,7 @@ namespace APDS_DropSensor
 
     void resume()
     {
-        // check if the task is suspended
-        task_state = eTaskGetState(dropDetectionTaskHandle); // INCLUDE_eTaskGetState must be set to 1 in FreeRTOSConfig.h for eTaskGetState() to be available.
+        task_state = eTaskGetState(dropDetectionTaskHandle);
         if (task_state == eSuspended)
         {
             APDS.begin();
@@ -228,7 +203,7 @@ namespace APDS_DropSensor
         return drop_count;
     }
 
-    void set_drop_count(const int count)
+    void set_drop_count(int count)
     {
         drop_count = count;
     }
@@ -264,7 +239,7 @@ namespace APDS_DropSensor
             case DEBUG_CROSSING_STATE_PRINT:
                 Serial.println("Debug mode: CROSSING_STATE_PRINT");
                 break;
-            case DEBUG_CORSSING_STATE_PLOT:
+            case DEBUG_CROSSING_STATE_PLOT:
                 Serial.println("Debug mode: CROSSING_STATE_PLOT");
                 break;
             case DEBUG_FREQ:
@@ -275,7 +250,9 @@ namespace APDS_DropSensor
             }
         }
         else
+        {
             debug_flag = DEBUG_NONE;
+        }
     }
 
     void setCrossCountTrigThreshold(int threshold)
@@ -294,25 +271,24 @@ namespace APDS_DropSensor
         X_FREQUENCY = pdMS_TO_TICKS(ms);
     }
 
-    void setBoundsLR(const uint8_t bound)
+    void setBoundsLR(uint8_t bound)
     {
-        data.set_bounds_lr((int)bound, (int)(-bound));
+        data.set_bounds_lr(static_cast<int>(bound), static_cast<int>(-bound));
     }
 
-    void setBoundsLP(const uint8_t bound)
+    void setBoundsLP(uint8_t bound)
     {
-        data.u.set_bounds_lp((int)bound, (int)(-bound));
-        data.d.set_bounds_lp((int)bound, (int)(-bound));
-        data.l.set_bounds_lp((int)bound, (int)(-bound));
-        data.r.set_bounds_lp((int)bound, (int)(-bound));
+        data.u.set_bounds_lp(static_cast<int>(bound), static_cast<int>(-bound));
+        data.d.set_bounds_lp(static_cast<int>(bound), static_cast<int>(-bound));
+        data.l.set_bounds_lp(static_cast<int>(bound), static_cast<int>(-bound));
+        data.r.set_bounds_lp(static_cast<int>(bound), static_cast<int>(-bound));
     }
 
-    void setBoundsDot(const uint8_t bound)
+    void setBoundsDot(uint8_t bound)
     {
-        data.u.set_bounds_dot((int)bound, (int)(-bound));
-        data.d.set_bounds_dot((int)bound, (int)(-bound));
-        data.l.set_bounds_dot((int)bound, (int)(-bound));
-        data.r.set_bounds_dot((int)bound, (int)(-bound));
+        data.u.set_bounds_dot(static_cast<int>(bound), static_cast<int>(-bound));
+        data.d.set_bounds_dot(static_cast<int>(bound), static_cast<int>(-bound));
+        data.l.set_bounds_dot(static_cast<int>(bound), static_cast<int>(-bound));
+        data.r.set_bounds_dot(static_cast<int>(bound), static_cast<int>(-bound));
     }
-
 }
