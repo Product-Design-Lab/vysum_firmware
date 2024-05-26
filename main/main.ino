@@ -1,6 +1,6 @@
-#include "PDL_Async_Button_Group.h"
-#include "DropDetection.h"
-#include "motor_controller.h"
+#include "PDL_Async_Button.h"
+#include "WaterdropSensor.h"
+#include "PDL_Motor_Controller.h"
 #include "PDL_Shutdown_Timer.h"
 #include "pins.h"
 
@@ -12,7 +12,10 @@
 MotorDriver mp6550;
 HwRotaryEncoder encoder;
 MotorController motor_controller(mp6550, encoder); // Pass references here
-AsyncButtonGroup button;
+PDL_Async_Button button;
+WaterdropSensor dropSensor;
+PDL_Shutdown_Timer shutdownTimer(PIN_POWER_EN, 30, HIGH);
+
 uint8_t buttonState;
 
 typedef enum
@@ -92,9 +95,9 @@ void dispense()
       Serial.println("Motor stalled");
       break;
     }
-    if (APDS_DropSensor::get_drop_count() > 0)
+    if (dropSensor.getDropCount() > 0)
     {
-      APDS_DropSensor::set_drop_count(0);
+      dropSensor.setDropCount(0);
       Serial.println("Drop detected");
       break;
     }
@@ -135,12 +138,8 @@ void setup()
   
   digitalWrite(LED_GREEN, LOW);
 
-  PDL_Shutdown_Timer_set_debug(PDL_Shutdown_Timer_Debug_ON);
-  PDL_Shutdown_Timer_set_shutdown_time_sec(30);
-  PDL_Shutdown_Timer_set_en_pin(PIN_POWER_EN);
-  PDL_Shutdown_Timer_set_enable_gpio_state(HIGH);
-  PDL_Shutdown_Timer_init();
-  // PDL_Shutdown_Timer_start();
+  shutdownTimer.setDebug(PDL_Shutdown_Timer::DEBUG_ON);
+  // shutdownTimer.start();
 
   mp6550.setPwmPin(PIN_MOTOR_PWM_1, PIN_MOTOR_PWM_2);
   mp6550.setDirNoPin();
@@ -162,10 +161,10 @@ void setup()
   button.setLongPressTime(1000);
   button.init();
 
-  APDS_DropSensor::init();
-  // APDS_DropSensor::pause();
-  APDS_DropSensor::setDebug(APDS_DropSensor::DEBUG_LOWPASS);
-  APDS_DropSensor::setCrossCountTrigThreshold(4);
+  dropSensor.init();
+  // dropSensor.pause();
+  dropSensor.setDebug(dropSensor.DEBUG_LOWPASS);
+  dropSensor.setCrossCountTrigThreshold(4);
 }
 
 // push button to start motor, drop sensor to reverse motor, long press to open grip
@@ -176,7 +175,7 @@ void loop()
     int pos = Serial.parseInt();
     if (pos >= 0 && pos <= 10)
     {
-      APDS_DropSensor::setDebug((uint8_t)pos);
+      dropSensor.setDebug((uint8_t)pos);
       // Serial.printf("Set debug flag: %d\n", pos);
     }
     else
@@ -191,11 +190,11 @@ void loop()
   switch (main_state)
   {
   case STATE_INIT:
-    if (buttonState == AsyncButtonGroup::BUTTON_SHORT_PRESS)
+    if (buttonState == PDL_Async_Button::BUTTON_SHORT_PRESS)
     {
       main_state = STATE_GRIP;
     }
-    else if (buttonState == AsyncButtonGroup::BUTTON_LONG_PRESS)
+    else if (buttonState == PDL_Async_Button::BUTTON_LONG_PRESS)
     {
       main_state = STATE_RELEASE;
     }
@@ -207,11 +206,11 @@ void loop()
     main_state = STATE_INIT;
     break;
   case STATE_IDLE:
-    if (buttonState == AsyncButtonGroup::BUTTON_SHORT_PRESS)
+    if (buttonState == PDL_Async_Button::BUTTON_SHORT_PRESS)
     {
       main_state = STATE_DISPENSE;
     }
-    else if (buttonState == AsyncButtonGroup::BUTTON_LONG_PRESS)
+    else if (buttonState == PDL_Async_Button::BUTTON_LONG_PRESS)
     {
       main_state = STATE_RELEASE;
     }
@@ -229,19 +228,19 @@ void loop()
   // state action
   case STATE_GRIP:
     gripping();
-    // PDL_Shutdown_Timer_reset();
+    // shutdownTimer.reset();
     break;
   case STATE_RELEASE:
     releasing();
-    // PDL_Shutdown_Timer_reset();
+    // shutdownTimer.reset();
     break;
   case STATE_DISPENSE:
     dispense();
-    // PDL_Shutdown_Timer_reset();
+    // shutdownTimer.reset();
     break;
   case STATE_RETRACT:
     retract();
-    // PDL_Shutdown_Timer_reset();
+    // shutdownTimer.reset();
     break;
   default:
     break;
