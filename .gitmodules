@@ -1,0 +1,27 @@
+[submodule "libraries/movingAverage"]
+	path = libraries/movingAverage
+	url = https://github.com/xuteng0/MovingAverage.git
+[submodule "libraries/Seeed_Arduino_LSM6DS3"]
+	path = libraries/Seeed_Arduino_LSM6DS3
+	url = https://github.com/Seeed-Studio/Seeed_Arduino_LSM6DS3.git
+[submodule "libraries/PDL_Tilt_Sensor"]
+	path = libraries/PDL_Tilt_Sensor
+	url = https://github.com/Product-Design-Lab/PDL_Tilt_Sensor
+[submodule "libraries/PDL_Waterdrop_Detection"]
+	path = libraries/PDL_Waterdrop_Detection
+	url = https://github.com/Product-Design-Lab/PDL_Waterdrop_Detection
+[submodule "libraries/Arduino_APDS9960"]
+	path = libraries/Arduino_APDS9960
+	url = https://github.com/Product-Design-Lab/Arduino_APDS9960
+[submodule "libraries/PDL_Motor_Controller"]
+	path = libraries/PDL_Motor_Controller
+	url = https://github.com/Product-Design-Lab/PDL_Motor_Controller
+[submodule "libraries/PDL_Motor_Driver"]
+	path = libraries/PDL_Motor_Driver
+	url = https://github.com/Product-Design-Lab/PDL_Motor_Driver
+[submodule "libraries/PDL_Async_Buttons"]
+	path = libraries/PDL_Async_Buttons
+	url = https://github.com/Product-Design-Lab/PDL_Async_Buttons
+[submodule "libraries/PDL_Shutdown_Timer"]
+	path = libraries/PDL_Shutdown_Timer
+	url = https://github.com/Product-Design-Lab/PDL_Shutdown_Timer
