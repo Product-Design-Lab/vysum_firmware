@@ -2,19 +2,20 @@
 
 #include "LSM6DS3.h"
 #include "Wire.h"
-#include "MovingAverageFloat.h"
+#include "MovingAverage.h"
 
 #define VERTICAL_THRESHOLD_DEGREES 10
 
 //Create a instance of class LSM6DS3
 LSM6DS3 myIMU(I2C_MODE, 0x6A);  //I2C device address 0x6A
-MovingAverageFloat<32> filter;
-float ax, ay, az, angle, angle_ave;
+MovingAverage<uint16_t, 16> filter;
+uint16_t ax, ay, az;
+float angle, angle_ave;
 bool is_vertical;
 
 void setup() {
   // put your setup code here, to run once:
-  Serial.begin(9600);
+  Serial.begin(115200);
   while (!Serial)
     ;
   //Call .begin() to configure the IMUs
@@ -27,9 +28,9 @@ void setup() {
 
 void loop() {
   //Accelerometer
-  ax = myIMU.readFloatAccelX();
-  ay = myIMU.readFloatAccelY();
-  az = myIMU.readFloatAccelZ();
+  ax = myIMU.readRawAccelX();
+  ay = myIMU.readRawAccelY();
+  az = myIMU.readRawAccelZ();
 
   //down direction is x
   angle = atan2(sqrt(ay * ay + az * az), ax) * 180 / M_PI;

@@ -17,7 +17,6 @@
 */
 
 #include <Arduino_APDS9960.h>
-#include "ComTool_Neutree.h"
 
 void setup()
 {
@@ -50,10 +49,7 @@ void loop()
 {
   count = APDS.gestureAvailable((uint8_t*)&up, (uint8_t*)&down, (uint8_t*)&left, (uint8_t*)&right);
   for(int i=0; i<count; i++){
-    ComToolPlot("up", up[i]);
-    ComToolPlot("down", down[i]);
-    ComToolPlot("left", left[i]);
-    ComToolPlot("right", right[i]);
+    Serial.printf("UP:%d, DOWN:%d, LEFT:%d, RIGHT:%d\n", up[i], down[i], left[i], right[i]);
   }
 
   delay(20);
