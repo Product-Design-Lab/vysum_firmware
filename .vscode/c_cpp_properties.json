@@ -9,7 +9,8 @@
                 "${env.USERPROFILE}/AppData/Local/Arduino15/packages/Seeeduino/hardware/nrf52/*/cores/nRF5/",
                 "${env.USERPROFILE}/AppData/Local/Arduino15/packages/Seeeduino/hardware/nrf52/*/libraries/**",
                 "${env.USERPROFILE}/AppData/Local/Arduino15/packages/Seeeduino/hardware/nrf52/*/variants/*"
-            ]
+            ],
+            "intelliSenseMode": "windows-msvc-x64"
         },
         {
             "name": "ubuntu",
@@ -20,7 +21,8 @@
                 "$HOME/.arduino15/packages/Seeeduino/hardware/nrf52/*/cores/nRF5/",
                 "$HOME/.arduino15/packages/Seeeduino/hardware/nrf52/*/libraries/**",
                 "$HOME/.arduino15/packages/Seeeduino/hardware/nrf52/*/variants/*"
-            ]
+            ],
+            "intelliSenseMode": "linux-gcc-x64"
         },
         {
             "name": "mac",

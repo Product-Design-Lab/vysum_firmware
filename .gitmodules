@@ -25,3 +25,6 @@
 [submodule "libraries/PDL_Shutdown_Timer"]
 	path = libraries/PDL_Shutdown_Timer
 	url = https://github.com/Product-Design-Lab/PDL_Shutdown_Timer
+[submodule "PDL_Dev_Tools"]
+	path = PDL_Dev_Tools
+	url = https://github.com/Product-Design-Lab/PDL_Dev_Tools
