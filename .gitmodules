@@ -28,3 +28,6 @@
 [submodule "PDL_Dev_Tools"]
 	path = PDL_Dev_Tools
 	url = https://github.com/Product-Design-Lab/PDL_Dev_Tools
+[submodule "libraries/PDL_RGB_Indicator"]
+	path = libraries/PDL_RGB_Indicator
+	url = https://github.com/Product-Design-Lab/PDL_RGB_Indicator.git
