@@ -1,5 +1,7 @@
 # How To setup
 
+- the git submodule init task in task.json requires bash. if using winodws, need to install wsl
+
 - add the following to Files->Preference->Additional bards manager URL:
 "https://files.seeedstudio.com/arduino/package_seeeduino_boards_index.json"
 and go to tools->Boards->Board manager, search and install "Seeed nRF52 Baords". DO NOT install the mbed-enabled alternative. the libraries are not compatable. 
