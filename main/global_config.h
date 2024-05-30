@@ -6,7 +6,6 @@
 #define DROP_TASK_PRIORITY 2
 #define BUTTON_TASK_PRIORITY 2
 
-
 // rtos task stack size
 #define IMU_TASK_STACK_SIZE 1024
 #define DAIG_TASK_STACK_SIZE 1024
@@ -14,9 +13,15 @@
 #define DROP_TASK_STACK_SIZE 1024
 #define BUTTON_TASK_STACK_SIZE 1024
 
-//rtos task delay
+// rtos task delay
 #define IMU_LOOP_DELAY_MS 100
 #define DIAG_LOOP_DELAY_MS 100
 #define MOTOR_LOOP_DELAY_MS 50
 #define DROP_LOOP_DELAY_MS 100
 #define BUTTON_NOTIFY_WAIT_MS 1000
+
+// project configuration
+#define GRIP_PWM -0.6
+#define RELEASE_PWM 0.6
+#define DISPENSE_MOTOR_ADVANCE 5000
+#define STALL_THRESHOLD_SPEED 5
