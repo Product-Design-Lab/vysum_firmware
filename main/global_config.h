@@ -21,7 +21,7 @@
 #define BUTTON_NOTIFY_WAIT_MS 1000
 
 // project configuration
-#define GRIP_PWM -0.6
-#define RELEASE_PWM 0.6
-#define DISPENSE_MOTOR_ADVANCE 5000
+#define GRIP_PWM 0.6
+#define RELEASE_PWM -0.6
+#define DISPENSE_MOTOR_ADVANCE -5000
 #define STALL_THRESHOLD_SPEED 5

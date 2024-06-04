@@ -11,63 +11,94 @@
 
 MotorDriver mp6550;
 HwRotaryEncoder encoder;
-MotorController motor_controller(mp6550, encoder); // Pass references here
-PDL_Async_Button button;
-WaterdropSensor dropSensor;
+MotorController motor_controller(mp6550, encoder);
+
+PDL_Async_Button button(PIN_BUTTON, HIGH);
+
+APDS9960 apds(Wire, -1);
+WaterdropSensor dropSensor(apds);
+
 PDL_Shutdown_Timer shutdownTimer(PIN_POWER_EN, 30, HIGH);
+
 RGB_Indicator led(PIN_LED_RED, PIN_LED_GREEN, PIN_LED_BLUE, false);
+
 PDL_Tilt_Sensor tiltSensor;
-
-void action_grip(void)
-{
-  motor_controller.setPwm(GRIP_PWM);
-  led.setPattern(GREEN_BLINK);
-  shutdownTimer.reset();
-  Serial.println("Gripping");
-}
-
-void action_release(void)
-{
-  motor_controller.setPwm(RELEASE_PWM);
-  led.setPattern(GREEN_CONST);
-  shutdownTimer.reset();
-}
-
-void action_dispense(void)
-{
-  motor_controller.setTargetPosition(DISPENSE_MOTOR_ADVANCE);
-  led.setPattern(BLUE_BLINK);
-  shutdownTimer.reset();
-}
-
-void action_retract(void)
-{
-  motor_controller.setTargetPosition(0);
-  led.setPattern(BLUE_CONST);
-  shutdownTimer.reset();
-}
-
-void action_pause(void)
-{
-  motor_controller.setPwm(0);
-  led.setPattern(RED_BLINK);
-  shutdownTimer.reset();
-}
 
 void action_init(void)
 {
+  led.setPattern(GREEN_CONST);
   motor_controller.setPwm(0);
-  motor_controller.setCurrentPosition(0);
-  motor_controller.setTargetPosition(0);
-  led.setPattern(GREEN_BREATHING);
-  shutdownTimer.reset();
+  // dropSensor.pause();
+  // tiltSensor.pause();
+  // shutdownTimer.reset();
+  // button.enable();
+  Serial.println("Init");
+}
+
+void action_grip(void)
+{
+  led.setPattern(YELLOW_BLINK);
+  motor_controller.setPwm(GRIP_PWM);
+  // dropSensor.pause();
+  // tiltSensor.pause();
+  // shutdownTimer.reset();
+  // button.disable();
+  Serial.println("Gripping");
 }
 
 void action_idle(void)
 {
-  motor_controller.setPwm(0);
   led.setPattern(GREEN_BREATHING);
-  shutdownTimer.reset();
+  motor_controller.setPwm(0);
+  // dropSensor.pause();
+  // tiltSensor.pause();
+  // shutdownTimer.reset();
+  // button.enable();
+  Serial.println("Idle");
+}
+
+void action_dispense(void)
+{
+  led.setPattern(YELLOW_CONST);
+  // dropSensor.resume();
+  // tiltSensor.resume();
+  motor_controller.setTargetPosition(DISPENSE_MOTOR_ADVANCE);
+  // shutdownTimer.reset();
+  // button.disable();
+  Serial.println("Dispensing");
+}
+
+void action_pause(void)
+{
+  led.setPattern(RED_BLINK);
+  // dropSensor.pause();
+  // tiltSensor.resume();
+  motor_controller.setPwm(0);
+  // shutdownTimer.reset();
+  // button.disable();
+  Serial.println("Paused");
+}
+
+void action_retract(void)
+{
+  led.setPattern(BLUE_CONST);
+  // dropSensor.pause();
+  // tiltSensor.pause();
+  motor_controller.setTargetPosition(0);
+  // shutdownTimer.reset();
+  // button.disable();
+  Serial.println("Retracting");
+}
+
+void action_release(void)
+{
+  led.setPattern(BLUE_BLINK);
+  motor_controller.setPwm(RELEASE_PWM);
+  // dropSensor.pause();
+  // tiltSensor.pause();
+  // shutdownTimer.reset();
+  // button.disable();
+  Serial.println("Releasing");
 }
 
 void cbs_MotorStall()
@@ -129,8 +160,6 @@ void setup()
 {
   Serial.begin(115200);
 
-  Init_StateMachine();
-
   shutdownTimer.setDebug(PDL_Shutdown_Timer::DEBUG_OFF);
   shutdownTimer.start();
 
@@ -145,13 +174,13 @@ void setup()
 
   motor_controller.setPositionLimits(20000, -20000);
   motor_controller.setGain(0.002, 0, 0);
+  motor_controller.setStallThreshold(100, 0.5);
   motor_controller.setDebug(MotorController::DEBUG_OFF);
   motor_controller.setLoopDelay(50);
   motor_controller.setOnMotorStall(cbs_MotorStall);
   motor_controller.setOnTargetReach(cbs_MotorReach);
   motor_controller.start();
 
-  button.setPin(PIN_BUTTON);
   button.setDebounceTime(5);
   button.setLongPressTime(1000);
   button.setShortPressCallback(cbs_ButtonShortPress);
@@ -162,18 +191,20 @@ void setup()
   dropSensor.setCrossCountTrigThreshold(4);
   dropSensor.setDropDetectedCallback(cbs_DropDetected, nullptr);
   dropSensor.init();
-  // dropSensor.pause();
 
-  tiltSensor.setDebugStatus(IMU_DEBUG_STATUS_ANGLE);
+  tiltSensor.setDebugStatus(IMU_DEBUG_STATUS_NONE);
   tiltSensor.setVerticalThresholds(-10, 10, -10, 10);
   tiltSensor.setLoopDelay(100);
-  tiltSensor.setTiltedCallback(cbs_DeviceTilted);
-  tiltSensor.setLevelCallback(cbs_DeviceVertical);
+  // tiltSensor.setTiltedCallback(cbs_DeviceTilted);
+  // tiltSensor.setLevelCallback(cbs_DeviceVertical);
   tiltSensor.init();
+
+  Init_StateMachine();
 }
 
 // push button to start motor, drop sensor to reverse motor, long press to open grip
 void loop()
 {
-  delay(200);
+  delay(1000);
+  // Serial.println("Loop");
 }
