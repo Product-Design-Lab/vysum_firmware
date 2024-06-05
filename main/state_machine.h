@@ -50,9 +50,10 @@ void SetReleasingAction(StateAction_t action);
 void SetPauseAction(StateAction_t action);
 
 // Function prototype for handling state transitions
-void HandleEvent(Event_t event);
 
+bool HandleEvent(Event_t event);
 State_t getCurrentState(void);
 
 // Function prototype for initializing the state machine
 void StateMachine_Init(void);
+

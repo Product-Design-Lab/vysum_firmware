@@ -1,4 +1,7 @@
 #include "state_machine.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
 #include <stdio.h>
 
 // Current state of the state machine
@@ -27,43 +30,12 @@ static const StateTransition_t stateTransitions[] = {
 // Function pointers for state-specific actions
 static StateAction_t stateActions[STATE_MAX_STATES] = {0};
 
-// Function to assign action functions
-void SetInitAction(StateAction_t action)
-{
-    stateActions[STATE_INIT] = action;
-}
+#define QUEUE_LENGTH 10
 
-void SetGrippingAction(StateAction_t action)
-{
-    stateActions[STATE_GRIPPING] = action;
-}
+QueueHandle_t xQueue = NULL;
+TaskHandle_t stateMachineTaskHandle = NULL;
 
-void SetIdleAction(StateAction_t action)
-{
-    stateActions[STATE_IDLE] = action;
-}
-
-void SetDispensingAction(StateAction_t action)
-{
-    stateActions[STATE_DISPENSING] = action;
-}
-
-void SetRetractingAction(StateAction_t action)
-{
-    stateActions[STATE_RETRACTING] = action;
-}
-
-void SetReleasingAction(StateAction_t action)
-{
-    stateActions[STATE_RELEASING] = action;
-}
-
-void SetPauseAction(StateAction_t action)
-{
-    stateActions[STATE_PAUSE] = action;
-}
-
-void printState(State_t state)
+static void printState(State_t state)
 {
     switch (state)
     {
@@ -91,7 +63,7 @@ void printState(State_t state)
     }
 }
 
-void printEvent(Event_t event)
+static void printEvent(Event_t event)
 {
     switch (event)
     {
@@ -141,7 +113,7 @@ static State_t GetNextState(State_t currentState, Event_t event)
 }
 
 // Function to handle state transitions
-void HandleEvent(Event_t event)
+static void _HandleEvent(Event_t event)
 {
     State_t nextState = GetNextState(currentState, event);
     if (nextState != currentState)
@@ -154,13 +126,75 @@ void HandleEvent(Event_t event)
     }
 }
 
-// Function to initialize the state machine
-void StateMachine_Init(void)
+void stateMachineTask(void *pvParameters)
 {
-    currentState = STATE_INIT;
-    if (stateActions[STATE_INIT])
+    Event_t event;
+    while (1)
     {
-        stateActions[STATE_INIT]();
+        if (xQueueReceive(xQueue, &event, portMAX_DELAY))
+        {
+            _HandleEvent(event);
+        }
+    }
+}
+
+/**
+ * public functions
+ */
+
+// Function to assign action functions
+void SetInitAction(StateAction_t action)
+{
+    stateActions[STATE_INIT] = action;
+}
+
+void SetGrippingAction(StateAction_t action)
+{
+    stateActions[STATE_GRIPPING] = action;
+}
+
+void SetIdleAction(StateAction_t action)
+{
+    stateActions[STATE_IDLE] = action;
+}
+
+void SetDispensingAction(StateAction_t action)
+{
+    stateActions[STATE_DISPENSING] = action;
+}
+
+void SetRetractingAction(StateAction_t action)
+{
+    stateActions[STATE_RETRACTING] = action;
+}
+
+void SetReleasingAction(StateAction_t action)
+{
+    stateActions[STATE_RELEASING] = action;
+}
+
+void SetPauseAction(StateAction_t action)
+{
+    stateActions[STATE_PAUSE] = action;
+}
+
+bool HandleEvent(Event_t event)
+{
+    if(xQueue == NULL)
+    {
+        return pdFALSE;
+    }
+
+    if(__get_IPSR())//check if we are in an ISR. This MACRO is ARM specific, doesn't work on other architectures such as RISC-V
+    {
+        BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+        xQueueSendFromISR(xQueue, &event, &xHigherPriorityTaskWoken);
+        portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+        return pdTRUE;
+    }
+    else
+    {
+       return xQueueSend(xQueue, &event, 0);
     }
 }
 
@@ -168,4 +202,21 @@ void StateMachine_Init(void)
 State_t getCurrentState(void)
 {
     return currentState;
+}
+
+// Function to initialize the state machine
+void StateMachine_Init(void)
+{
+    xQueue = xQueueCreate(QUEUE_LENGTH, sizeof(Event_t));
+    if (xQueue == NULL)
+    {
+        printf("Queue creation failed\n");
+    }
+
+    xTaskCreate(stateMachineTask, "stateMachineTask", 1024, NULL, 1, &stateMachineTaskHandle);
+    if (stateMachineTaskHandle == NULL)
+    {
+        printf("Task creation failed\n");
+    }
+
 }

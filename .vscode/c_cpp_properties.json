@@ -10,7 +10,7 @@
                 "${env.USERPROFILE}/AppData/Local/Arduino15/packages/Seeeduino/hardware/nrf52/*/libraries/**",
                 "${env.USERPROFILE}/AppData/Local/Arduino15/packages/Seeeduino/hardware/nrf52/*/variants/*"
             ],
-            "intelliSenseMode": "windows-msvc-x64"
+            "intelliSenseMode": "windows-gcc-arm"
         },
         {
             "name": "ubuntu",
