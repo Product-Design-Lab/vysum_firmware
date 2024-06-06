@@ -1,6 +1,6 @@
 [submodule "libraries/movingAverage"]
 	path = libraries/movingAverage
-	url = https://github.com/xuteng0/MovingAverage.git
+	url = https://github.com/pilotak/MovingAverage
 [submodule "libraries/Seeed_Arduino_LSM6DS3"]
 	path = libraries/Seeed_Arduino_LSM6DS3
 	url = https://github.com/Seeed-Studio/Seeed_Arduino_LSM6DS3.git
