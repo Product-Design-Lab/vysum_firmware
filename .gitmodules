@@ -31,3 +31,6 @@
 [submodule "libraries/PDL_RGB_Indicator"]
 	path = libraries/PDL_RGB_Indicator
 	url = https://github.com/Product-Design-Lab/PDL_RGB_Indicator.git
+[submodule "libraries/PDL_Diagnostic_Print"]
+	path = libraries/PDL_Diagnostic_Print
+	url = https://github.com/Product-Design-Lab/PDL_Diagnostic_Print.git
