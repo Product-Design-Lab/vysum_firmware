@@ -34,3 +34,6 @@
 [submodule "libraries/PDL_Diagnostic_Print"]
 	path = libraries/PDL_Diagnostic_Print
 	url = https://github.com/Product-Design-Lab/PDL_Diagnostic_Print.git
+[submodule "libraries/PDL_Generic_State_Machine"]
+	path = libraries/PDL_Generic_State_Machine
+	url = https://github.com/Product-Design-Lab/PDL_Generic_State_Machine.git

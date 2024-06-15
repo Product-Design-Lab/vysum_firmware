@@ -156,8 +156,8 @@ void cbs_Timeout()
 void setup()
 {
   Serial.begin(115200);
-  while (!Serial)
-    ;
+  // while (!Serial)
+  //   ;
 
   Serial.println("Init RGB LED");
   led.setPattern(RAINBOW);
