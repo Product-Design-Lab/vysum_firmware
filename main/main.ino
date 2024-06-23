@@ -5,6 +5,7 @@
 #include "PDL_RGB_Indicator.h"
 #include "PDL_Tilt_Sensor.h"
 #include "state_machine.h"
+#include "event_timer.h"
 
 // #include "watchdog.h"
 #include "pins.h"
@@ -59,6 +60,7 @@ void action_idle(void)
   // tiltSensor.pause();
   shutdownTimer.reset();
   button.enable();
+  event_timer_stop();
   // Serial.println("Idle");
 }
 
@@ -71,6 +73,8 @@ void action_dispense(void)
   // motor_controller.start();
   shutdownTimer.reset();
   button.disable();
+  event_timer_set_timeout(2000); // wait for 2 seconds
+  event_timer_reset();
   // Serial.println("Dispensing");
 }
 
@@ -83,6 +87,8 @@ void action_pause(void)
   // motor_controller.pause();
   shutdownTimer.reset();
   button.disable();
+  event_timer_set_timeout(3000); // wait for 3 seconds
+  event_timer_reset();
   // Serial.println("Paused");
 }
 
@@ -95,6 +101,8 @@ void action_retract(void)
   // motor_controller.start();
   shutdownTimer.reset();
   button.disable();
+  event_timer_set_timeout(2000);
+  event_timer_reset();
   // Serial.println("Retracting");
 }
 
@@ -221,6 +229,10 @@ void setup()
   // tiltSensor.setLevelCallback(cbs_DeviceVertical);
   tiltSensor.init();
   Serial.println("Tilt sensor init done");
+
+  Serial.println("Init event timer");
+  event_timer_init(2000, cbs_Timeout);
+  Serial.println("Event timer init done");
 
   Serial.println("Init State Machine");
   SetInitAction(action_init);
