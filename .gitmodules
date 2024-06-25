@@ -34,6 +34,6 @@
 [submodule "libraries/PDL_Diagnostic_Print"]
 	path = libraries/PDL_Diagnostic_Print
 	url = https://github.com/Product-Design-Lab/PDL_Diagnostic_Print.git
-[submodule "libraries/PDL_Generic_State_Machine"]
-	path = libraries/PDL_Generic_State_Machine
-	url = https://github.com/Product-Design-Lab/PDL_Generic_State_Machine.git
+[submodule "libraries/Adafruit_NeoPixel"]
+	path = libraries/Adafruit_NeoPixel
+	url = https://github.com/adafruit/Adafruit_NeoPixel.git
