@@ -6,6 +6,8 @@
 #include "PDL_Tilt_Sensor.h"
 #include "state_machine.h"
 #include "event_timer.h"
+// #include "Adafruit_NeoPixel.h"
+#include <math.h>
 
 // #include "watchdog.h"
 #include "pins.h"
@@ -25,6 +27,11 @@ PDL_Shutdown_Timer shutdownTimer(PIN_POWER_EN, 30, HIGH);
 RGB_Indicator led(PIN_LED_RED, PIN_LED_GREEN, PIN_LED_BLUE, false);
 
 PDL_Tilt_Sensor tiltSensor;
+// Adafruit_NeoPixel ring(LED_COUNT, PIN_LED_DATA, NEO_GRB + NEO_KHZ800);
+
+
+long tic = 0;
+
 
 bool flag_position_reset = false;
 
@@ -61,6 +68,56 @@ void action_idle(void)
     motor_controller.setCurrentPosition(0);
     flag_position_reset = true;
   }
+
+
+  // double x_nom = 45;
+  // double y_nom = 0;
+  // double x_tol = 15;
+  // double y_tol = 5;
+
+
+  // double x_measured = -tiltSensor.getAngleX();
+  // double y_measured = tiltSensor.getAngleY();
+
+  // int angle_step = 30;
+
+  // double x_delta = x_nom - x_measured;
+  // double y_delta = y_nom - y_measured;
+
+  // double theta = atan2(x_delta,y_delta) * 180/PI;
+
+  // int theta_LED = theta/angle_step;
+
+  // double mag = sqrt(x_delta*x_delta + y_delta*y_delta);
+
+  // Serial.println("Angle: " + String(theta) + ", " + String(x_delta) + ", " + String(y_delta) + ", " + String(x_measured) + ", " + String(y_measured));
+
+  // Serial.println(theta_LED);
+  
+  // Serial.println(mag);
+
+
+  // if (mag < x_tol) {
+  //   for (int i = 0; i < LED_COUNT; i++)
+  //     {
+  //         ring.setPixelColor(i, ring.Color(0, 255, 0));
+  //     }
+  // }
+  // else {
+  //     for (int i = 0; i < LED_COUNT; i++)
+  //     {
+  //       if (i == theta_LED) {
+  //         ring.setPixelColor(i, ring.Color(255, 255, 0));
+  //       }
+  //       else {
+  //         ring.setPixelColor(i, ring.Color(0, 0, 0));
+  //       }
+        
+  //     }
+  // }
+
+  // ring.show();
+  
   
   motor_controller.setPwm(0);
   // dropSensor.pause();
@@ -80,7 +137,7 @@ void action_dispense(void)
   // motor_controller.start();
   shutdownTimer.reset();
   button.disable();
-  event_timer_set_timeout(2000); // wait for 2 seconds
+  event_timer_set_timeout(5000); // wait for 2 seconds
   event_timer_reset();
   // Serial.println("Dispensing");
 }
@@ -171,8 +228,22 @@ void cbs_Timeout()
 void setup()
 {
   Serial.begin(115200);
+
+  tic = millis();
+  while (!Serial) {
+    if (millis() - tic > SERIAL_TIMEOUT) {
+      break;
+    }
+  }
   // while (!Serial)
   //   ;
+
+  // Serial.println("Init LED ring");
+  // pinMode(PIN_LED_DATA, OUTPUT);
+  // ring.begin();
+  // ring.setBrightness(LED_BRIGHTNESS);
+  // ring.show();
+  // Serial.println("LED ring init done");
 
   Serial.println("Init RGB LED");
   led.setPattern(RAINBOW);
@@ -205,7 +276,7 @@ void setup()
   Serial.println("Init Motor Controller");
   motor_controller.setPositionLimits(20000, -20000);
   motor_controller.setGain(0.002, 0, 0);
-  motor_controller.setStallThreshold(50, 0.5);
+  motor_controller.setStallThreshold(100, 0.5);
   motor_controller.setDebug(MotorController::DEBUG_OFF);
   motor_controller.setLoopDelay(50);
   motor_controller.setOnMotorStall(cbs_MotorStall);
@@ -231,14 +302,14 @@ void setup()
   Serial.println("Init Tilt sensor");
   tiltSensor.setDebugStatus(IMU_DEBUG_STATUS_NONE);
   tiltSensor.setVerticalThresholds(-10, 10, -10, 10);
-  tiltSensor.setLoopDelay(100);
+  tiltSensor.setLoopDelay(50);
   // tiltSensor.setTiltedCallback(cbs_DeviceTilted);
   // tiltSensor.setLevelCallback(cbs_DeviceVertical);
   tiltSensor.init();
   Serial.println("Tilt sensor init done");
 
   Serial.println("Init event timer");
-  event_timer_init(2000, cbs_Timeout);
+  event_timer_init(5000, cbs_Timeout);
   Serial.println("Event timer init done");
 
   Serial.println("Init State Machine");
