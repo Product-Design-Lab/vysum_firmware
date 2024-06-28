@@ -1,7 +1,10 @@
 {
-    "C_Cpp.default.compilerPath": "",
     "CodeGPT.apiKey": "OpenAI",
     "files.associations": {
-        "rtos.h": "c"
-    }
+        "rtos.h": "c",
+        "stdbool.h": "c",
+        "math.h": "c",
+        "_ansi.h": "c"
+    },
+    "C_Cpp.errorSquiggles": "enabled"
 }
