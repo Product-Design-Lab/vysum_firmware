@@ -26,6 +26,8 @@ RGB_Indicator led(PIN_LED_RED, PIN_LED_GREEN, PIN_LED_BLUE, false);
 
 PDL_Tilt_Sensor tiltSensor;
 
+bool flag_position_reset = false;
+
 void action_init(void)
 {
   led.setPattern(WHITE_CONST);
@@ -47,6 +49,7 @@ void action_grip(void)
   // tiltSensor.pause();
   shutdownTimer.reset();
   button.disable();
+  flag_position_reset = false;    // NB
   // Serial.println("Gripping");
 }
 
@@ -54,7 +57,11 @@ void action_idle(void)
 {
   led.setPattern(GREEN_BREATHING);
   // motor_controller.pause();
-  motor_controller.setCurrentPosition(0);
+  if (!flag_position_reset) {   // NB
+    motor_controller.setCurrentPosition(0);
+    flag_position_reset = true;
+  }
+  
   motor_controller.setPwm(0);
   // dropSensor.pause();
   // tiltSensor.pause();
@@ -198,7 +205,7 @@ void setup()
   Serial.println("Init Motor Controller");
   motor_controller.setPositionLimits(20000, -20000);
   motor_controller.setGain(0.002, 0, 0);
-  motor_controller.setStallThreshold(100, 0.5);
+  motor_controller.setStallThreshold(50, 0.5);
   motor_controller.setDebug(MotorController::DEBUG_OFF);
   motor_controller.setLoopDelay(50);
   motor_controller.setOnMotorStall(cbs_MotorStall);
@@ -216,7 +223,7 @@ void setup()
 
   Serial.println("Init Drop sensor");
   dropSensor.setDebug(WaterdropSensor::DEBUG_INFO);
-  dropSensor.setCrossCountTrigThreshold(4);
+  dropSensor.setCrossCountTrigThreshold(2);
   dropSensor.setDropDetectedCallback(cbs_DropDetected, nullptr);
   dropSensor.init();
   Serial.println("Drop sensor init done");
