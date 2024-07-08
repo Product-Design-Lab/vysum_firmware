@@ -21,7 +21,15 @@
 #define BUTTON_NOTIFY_WAIT_MS 1000
 
 // project configuration
-#define GRIP_PWM 0.7
-#define RELEASE_PWM -0.7
+#define GRIP_PWM 0.6
+#define RELEASE_PWM -0.6
 #define DISPENSE_MOTOR_ADVANCE 5000
 #define STALL_THRESHOLD_SPEED 5
+
+// LED ring
+#define LED_COUNT 12
+#define LED_BRIGHTNESS 80
+#define LED_RATE 5
+
+// misc
+#define SERIAL_TIMEOUT 300
