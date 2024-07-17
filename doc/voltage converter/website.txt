@@ -1,0 +1,7 @@
+Boost Connverter:
+https://core-electronics.com.au/12v-step-up-voltage-regulator-u3v40f12.html
+https://www.pololu.com/product/4016
+
+Buck Converter:
+https://core-electronics.com.au/pololu-5v-600ma-step-down-voltage-regulator-d36v6f5.html
+https://www.pololu.com/product/3792

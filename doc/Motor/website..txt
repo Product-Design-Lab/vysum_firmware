@@ -1,0 +1,21 @@
+https://item.taobao.com/item.htm?spm=a1z09.2.0.0.5c1f2e8du1cSqj&id=535797816325&_u=g20k31tbd7c3&sku_properties=-1:-1
+
+need to push 3mm at 2kg of force to ensure drop dispense
+
+the torque required to produce a 2kg force using M4 Thread:
+T = F*d/2 *(p+pi*u*d)/(pi*d-u*p)
+
+T is the torque.
+F = 20N is the axial force applied along the axis of the threaded fastener.
+d = 3.54mm is the mean diameter of the thread. This is typically calculated as the average of the major and minor diameters of the thread.
+p = 0.7 is the pitch of the thread, which is the distance between adjacent threads.
+μ=0..2 is the coefficient of friction between the mating surfaces of the thread.
+
+T=1.93 kg*cm
+
+ideally we want to push 3mm in 1 sec. Assume const acc immediately followed by const deacc. motor need to turn 6/0.7 = 8.6 rev
+
+RPM = 8.6 / 1 * 60 = 516
+
+power required 
+P = 1.02W

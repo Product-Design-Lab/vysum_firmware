@@ -3,11 +3,13 @@
 #include "PDL_Motor_Controller.h"
 #include "PDL_Shutdown_Timer.h"
 #include "PDL_RGB_Indicator.h"
+#include "Adafruit_NeoPixel.h"
+#include "PDL_Addressable_LED.h"
 #include "PDL_Tilt_Sensor.h"
 #include "state_machine.h"
 #include "event_timer.h"
+#include "Adafruit_TinyUSB.h"
 
-// #include "watchdog.h"
 #include "pins.h"
 #include "global_config.h"
 
@@ -20,102 +22,94 @@ PDL_Async_Button button(PIN_BUTTON, HIGH);
 APDS9960 apds(Wire, -1);
 WaterdropSensor dropSensor(apds);
 
-PDL_Shutdown_Timer shutdownTimer(PIN_POWER_EN, 30, HIGH);
+PDL_Shutdown_Timer shutdownTimer(PIN_POWER_EN, SHUTDOWN__TIMEOUT, HIGH);
 
 RGB_Indicator led(PIN_LED_RED, PIN_LED_GREEN, PIN_LED_BLUE, false);
 
 PDL_Tilt_Sensor tiltSensor;
+
+Adafruit_NeoPixel np(LED_COUNT, PIN_LED_DATA, NEO_GRB + NEO_KHZ800); // do not use this object directly, use led_ring instead
+PDL_Addressable_LED led_ring(np);
 
 bool flag_position_reset = false;
 
 void action_init(void)
 {
   led.setPattern(WHITE_CONST);
+  led_ring.setPatternSingleColor(PDL_Addressable_LED::PATTERN_GREEN_CONST_ALL);
   motor_controller.setPwm(0);
-  // motor_controller.pause();
-  // dropSensor.pause();
-  // tiltSensor.pause();
   shutdownTimer.reset();
   button.enable();
-  // Serial.println("Init");
 }
 
 void action_grip(void)
 {
   led.setPattern(YELLOW_BLINK);
+  led_ring.setPatternSingleColor(PDL_Addressable_LED::PATTERN_RED_FADE_ALL);
   motor_controller.setPwm(GRIP_PWM);
-  // motor_controller.start();
-  // dropSensor.pause();
-  // tiltSensor.pause();
+  delay(200);
   shutdownTimer.reset();
   button.disable();
-  flag_position_reset = false;    // NB
-  // Serial.println("Gripping");
+  flag_position_reset = false;
 }
 
 void action_idle(void)
 {
   led.setPattern(GREEN_BREATHING);
-  // motor_controller.pause();
-  if (!flag_position_reset) {   // NB
+  led_ring.setPatternSingleColor(PDL_Addressable_LED::PATTERN_GREEN_MARQUEE_CIRCULAR);
+  if (!flag_position_reset)
+  {
     motor_controller.setCurrentPosition(0);
     flag_position_reset = true;
   }
-  
+
   motor_controller.setPwm(0);
-  // dropSensor.pause();
-  // tiltSensor.pause();
   shutdownTimer.reset();
   button.enable();
   event_timer_stop();
-  // Serial.println("Idle");
 }
 
 void action_dispense(void)
 {
-  led.setPattern(YELLOW_CONST);
-  // dropSensor.resume();
-  // tiltSensor.resume();
-  motor_controller.setTargetPosition(DISPENSE_MOTOR_ADVANCE);
-  // motor_controller.start();
-  shutdownTimer.reset();
-  button.disable();
   event_timer_set_timeout(2000); // wait for 2 seconds
   event_timer_reset();
-  // Serial.println("Dispensing");
+  led.setPattern(YELLOW_CONST);
+  // led_ring.setPatternSingleColor(PDL_Addressable_LED::PATTERN_RED_MARQUEE_CIRCULAR);
+  motor_controller.setTargetPosition(DISPENSE_MOTOR_ADVANCE);
+  shutdownTimer.reset();
+  button.disable();
 }
 
 void action_pause(void)
 {
-  led.setPattern(RED_BLINK);
-  // dropSensor.pause();
-  // tiltSensor.resume();
-  motor_controller.setPwm(0);
-  // motor_controller.pause();
-  shutdownTimer.reset();
-  button.disable();
   event_timer_set_timeout(3000); // wait for 3 seconds
   event_timer_reset();
-  // Serial.println("Paused");
+  led.setPattern(RED_BLINK);
+  led_ring.setPatternSingleColor(PDL_Addressable_LED::PATTERN_RED_CONST_ALL);
+  motor_controller.setPwm(0);
+  shutdownTimer.reset();
+  button.disable();
 }
 
 void action_retract(void)
 {
-  led.setPattern(BLUE_CONST);
-  // dropSensor.pause();
-  // tiltSensor.pause();
-  motor_controller.setTargetPosition(0);
-  // motor_controller.start();
-  shutdownTimer.reset();
-  button.disable();
   event_timer_set_timeout(2000);
   event_timer_reset();
-  // Serial.println("Retracting");
+  led.setPattern(BLUE_CONST);
+  led_ring.setPatternSingleColor(PDL_Addressable_LED::PATTERN_BLUE_MARQUEE_CIRCULAR);
+  motor_controller.setTargetPosition(0);
+  shutdownTimer.reset();
+  button.disable();
 }
 
 void action_release(void)
 {
+  event_timer_set_timeout(2000);
+  event_timer_reset();
   led.setPattern(BLUE_BLINK);
+  led_ring.setPatternSingleColor(PDL_Addressable_LED::PATTERN_BLUE_FADE_ALL);
+  motor_controller.setPwm(RELEASE_PWM * 1.5);
+  delay(200);
   motor_controller.setPwm(RELEASE_PWM);
   // motor_controller.start();
   // dropSensor.pause();
@@ -167,16 +161,21 @@ void cbs_Timeout()
   HandleEvent(EVENT_TIMEOUT);
 }
 
-
 void setup()
 {
   Serial.begin(115200);
-  // while (!Serial)
-  //   ;
+  while (!Serial && (millis() < SERIAL_TIMEOUT))
+    ;
 
   Serial.println("Init RGB LED");
   led.setPattern(RAINBOW);
   Serial.println("LED init done");
+
+  Serial.println("Init LED Ring");
+  led_ring.setDebug(0);
+  led_ring.init();
+  led_ring.setPatternSingleColor(PDL_Addressable_LED::PATTERN_GREEN_MARQUEE_CIRCULAR);
+  Serial.println("LED Ring init done");
 
   // Serial.println("Init watchdog");
   // watchdog_init();
@@ -223,7 +222,7 @@ void setup()
 
   Serial.println("Init Drop sensor");
   dropSensor.setDebug(WaterdropSensor::DEBUG_INFO);
-  dropSensor.setCrossCountTrigThreshold(2);
+  dropSensor.setCrossCountTrigThreshold(4);
   dropSensor.setDropDetectedCallback(cbs_DropDetected, nullptr);
   dropSensor.init();
   Serial.println("Drop sensor init done");
@@ -260,6 +259,25 @@ void setup()
 // push button to start motor, drop sensor to reverse motor, long press to open grip
 void loop()
 {
+  if (Serial.available())
+  {
+    // "d_ir 1" to set ir sensor debug to 1
+    String input = Serial.readStringUntil('\n');
+    if (input.startsWith("d_ir"))
+    {
+      int debug = input.substring(5).toInt();
+      dropSensor.setDebug(debug);
+    }
+    else if (input.startsWith("release"))
+    {
+      motor_controller.setPwm(RELEASE_PWM * 1.5);
+      delay(1000);
+      motor_controller.setPwm(0);
+      flag_position_reset = true;
+      action_init();
+    }
+  }
+
   delay(1000);
   // watchdog_feed();
 }

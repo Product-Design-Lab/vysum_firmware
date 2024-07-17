@@ -32,4 +32,5 @@
 #define LED_RATE 5
 
 // misc
-#define SERIAL_TIMEOUT 300
+#define SERIAL_TIMEOUT 1000   //ms
+#define SHUTDOWN__TIMEOUT 60  //sec

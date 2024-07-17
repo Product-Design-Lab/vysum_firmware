@@ -4,7 +4,8 @@
         "rtos.h": "c",
         "stdbool.h": "c",
         "math.h": "c",
-        "_ansi.h": "c"
+        "_ansi.h": "c",
+        "*.tcc": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }
