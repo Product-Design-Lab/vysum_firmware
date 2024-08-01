@@ -9,23 +9,29 @@ static State_t currentState = STATE_INIT;
 
 // State transition table
 static const StateTransition_t stateTransitions[] = {
-    {STATE_INIT, EVENT_SHORT_PRESS, STATE_GRIPPING},
-    {STATE_INIT, EVENT_LONG_PRESS, STATE_RELEASING},
-    {STATE_GRIPPING, EVENT_MOTOR_STALL, STATE_IDLE},
-    {STATE_IDLE, EVENT_LONG_PRESS, STATE_RELEASING},
-    {STATE_IDLE, EVENT_SHORT_PRESS, STATE_DISPENSING},
-    {STATE_DISPENSING, EVENT_DISTANCE_REACHED, STATE_RETRACTING},
-    {STATE_DISPENSING, EVENT_DROP_DETECTED, STATE_RETRACTING},
-    {STATE_DISPENSING, EVENT_MOTOR_STALL, STATE_RETRACTING},
-    {STATE_DISPENSING, EVENT_TIMEOUT, STATE_RETRACTING},
-    {STATE_DISPENSING, EVENT_DEVICE_TILTED, STATE_PAUSE},
-    {STATE_RETRACTING, EVENT_DISTANCE_REACHED, STATE_IDLE},
-    {STATE_RETRACTING, EVENT_TIMEOUT, STATE_IDLE},
-    // {STATE_RELEASING, EVENT_DISTANCE_REACHED, STATE_INIT},
-    {STATE_RELEASING, EVENT_MOTOR_STALL, STATE_INIT},
-    {STATE_RELEASING, EVENT_TIMEOUT, STATE_INIT},
-    {STATE_PAUSE, EVENT_DEVICE_VERTICAL, STATE_DISPENSING},
-    {STATE_PAUSE, EVENT_TIMEOUT, STATE_RETRACTING}};
+    {STATE_INIT,            EVENT_SHORT_PRESS,      STATE_GRIPPING},
+    {STATE_INIT,            EVENT_LONG_PRESS,       STATE_RELEASING},
+    {STATE_GRIPPING,        EVENT_MOTOR_STALL,      STATE_IDLE},
+    {STATE_IDLE,            EVENT_LONG_PRESS,       STATE_RELEASING},
+    {STATE_IDLE,            EVENT_DEVICE_VERTICAL,  STATE_READY},
+    {STATE_READY,           EVENT_SHORT_PRESS,      STATE_DISPENSING},
+    {STATE_READY,           EVENT_DEVICE_TILTED,    STATE_IDLE},
+    {STATE_READY,           EVENT_LONG_PRESS,       STATE_RELEASING},
+    {STATE_DISPENSING,      EVENT_DISTANCE_REACHED, STATE_RETRACTING},
+    {STATE_DISPENSING,      EVENT_DROP_DETECTED,    STATE_RETRACTING},
+    {STATE_DISPENSING,      EVENT_MOTOR_STALL,      STATE_RETRACTING},
+    {STATE_DISPENSING,      EVENT_TIMEOUT,          STATE_RETRACTING},
+    {STATE_DISPENSING,      EVENT_DROP_SUSPENDING,  STATE_DISPENSING_SLOW},
+    {STATE_DISPENSING_SLOW, EVENT_DISTANCE_REACHED, STATE_RETRACTING},
+    {STATE_DISPENSING_SLOW, EVENT_DROP_DETECTED,    STATE_RETRACTING},
+    {STATE_DISPENSING_SLOW, EVENT_MOTOR_STALL,      STATE_RETRACTING},
+    {STATE_DISPENSING_SLOW, EVENT_TIMEOUT,          STATE_RETRACTING},
+    {STATE_RETRACTING,      EVENT_DISTANCE_REACHED, STATE_IDLE},
+    {STATE_RETRACTING,      EVENT_TIMEOUT,          STATE_IDLE},
+    {STATE_RETRACTING,      EVENT_MOTOR_STALL,      STATE_IDLE},
+    {STATE_RELEASING,       EVENT_MOTOR_STALL,      STATE_INIT},
+    {STATE_RELEASING,       EVENT_TIMEOUT,          STATE_INIT},
+    };
 
 // Number of transitions
 #define NUM_TRANSITIONS (sizeof(stateTransitions) / sizeof(stateTransitions[0]))
@@ -51,8 +57,14 @@ static void printState(State_t state)
     case STATE_IDLE:
         printf("Current state: IDLE\n");
         break;
+    case STATE_READY:
+        printf("Current state: READY\n");
+        break;
     case STATE_DISPENSING:
-        printf("Current state: DISPENSING\n");
+        printf("Current state: DISPENSING_FAST\n");
+        break;
+    case STATE_DISPENSING_SLOW:
+        printf("Current state: DISPENSING_SLOW\n");
         break;
     case STATE_RETRACTING:
         printf("Current state: RETRACTING\n");
@@ -60,8 +72,7 @@ static void printState(State_t state)
     case STATE_RELEASING:
         printf("Current state: RELEASING\n");
         break;
-    case STATE_PAUSE:
-        printf("Current state: PAUSE\n");
+    default:
         break;
     }
 }
@@ -76,14 +87,17 @@ static void printEvent(Event_t event)
     case EVENT_LONG_PRESS:
         printf("Event: LONG_PRESS\n");
         break;
+    case EVENT_MOTOR_STALL:
+        printf("Event: MOTOR_STALL\n");
+        break;
     case EVENT_DISTANCE_REACHED:
         printf("Event: DISTANCE_REACHED\n");
         break;
     case EVENT_DROP_DETECTED:
         printf("Event: DROP_DETECTED\n");
         break;
-    case EVENT_MOTOR_STALL:
-        printf("Event: MOTOR_STALL\n");
+    case EVENT_DROP_SUSPENDING:
+        printf("Event: DROP_SUSPENDING\n");
         break;
     case EVENT_DEVICE_TILTED:
         printf("Event: DEVICE_TILTED\n");
@@ -93,6 +107,8 @@ static void printEvent(Event_t event)
         break;
     case EVENT_TIMEOUT:
         printf("Event: TIMEOUT\n");
+        break;
+    default:
         break;
     }
 }
@@ -161,9 +177,19 @@ void SetIdleAction(StateAction_t action)
     stateActions[STATE_IDLE] = action;
 }
 
+void SetReadyAction(StateAction_t action)
+{
+    stateActions[STATE_READY] = action;
+}
+
 void SetDispensingAction(StateAction_t action)
 {
     stateActions[STATE_DISPENSING] = action;
+}
+
+void SetDispensingSlowAction(StateAction_t action)
+{
+    stateActions[STATE_DISPENSING_SLOW] = action;
 }
 
 void SetRetractingAction(StateAction_t action)
@@ -176,10 +202,7 @@ void SetReleasingAction(StateAction_t action)
     stateActions[STATE_RELEASING] = action;
 }
 
-void SetPauseAction(StateAction_t action)
-{
-    stateActions[STATE_PAUSE] = action;
-}
+
 
 bool HandleEvent(Event_t event)
 {

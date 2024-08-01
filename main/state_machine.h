@@ -8,10 +8,11 @@ typedef enum
     STATE_INIT,
     STATE_GRIPPING,
     STATE_IDLE,
+    STATE_READY,
     STATE_DISPENSING,
+    STATE_DISPENSING_SLOW,
     STATE_RETRACTING,
     STATE_RELEASING,
-    STATE_PAUSE,
     STATE_MAX_STATES // For boundary checking
 } State_t;
 
@@ -20,9 +21,10 @@ typedef enum
 {
     EVENT_SHORT_PRESS,
     EVENT_LONG_PRESS,
+    EVENT_MOTOR_STALL,
     EVENT_DISTANCE_REACHED,
     EVENT_DROP_DETECTED,
-    EVENT_MOTOR_STALL,
+    EVENT_DROP_SUSPENDING,
     EVENT_DEVICE_TILTED,
     EVENT_DEVICE_VERTICAL,
     EVENT_TIMEOUT,
@@ -44,10 +46,11 @@ typedef void (*StateAction_t)(void);
 void SetInitAction(StateAction_t action);
 void SetGrippingAction(StateAction_t action);
 void SetIdleAction(StateAction_t action);
+void SetReadyAction(StateAction_t action);
 void SetDispensingAction(StateAction_t action);
+void SetDispensingSlowAction(StateAction_t action);
 void SetRetractingAction(StateAction_t action);
 void SetReleasingAction(StateAction_t action);
-void SetPauseAction(StateAction_t action);
 
 // Function prototype for handling state transitions
 
