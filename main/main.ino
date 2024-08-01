@@ -55,6 +55,7 @@ void action_grip(void)
 
     motor_controller.setPwm(GRIP_PWM);
     delay(200);
+    motor_controller.setStallThreshold(200, 0.4);
     shutdownTimer.reset();
     button.disable();
     flag_position_reset = false;
@@ -69,13 +70,22 @@ void action_idle(void)
     {
         motor_controller.setCurrentPosition(0);
         flag_position_reset = true;
+        motor_controller.setStallThreshold(50, 0.5);
     }
 
-    if (tiltSensor.isVertical())
+    if (tilt_limit_flag) 
     {
+      if (tiltSensor.isVertical())
+      {
         // case when device is vertical already. Note: may need to remain vertiel for some time
         HandleEvent(EVENT_DEVICE_VERTICAL);
+      }
     }
+    else 
+    {
+      HandleEvent(EVENT_DEVICE_VERTICAL);
+    }
+    
 
     motor_controller.setPwm(0);
     shutdownTimer.reset();
@@ -95,35 +105,67 @@ void action_ready(void)
 
 void action_dispense(void)
 {
-    event_timer_set_timeout(2000); // allow for 2 seconds
+    motor_controller.setMaxSpeed(DISPENSE_FAST_SPEED); 
+    event_timer_set_timeout(DISPENSE_FAST_TIMEOUT); // allow for 2 seconds
     event_timer_reset();
     led.setPattern(YELLOW_CONST);
     // led_ring.setPatternSingleColor(PDL_Addressable_LED::PATTERN_RED_MARQUEE_CIRCULAR);
-    motor_controller.setTargetPosition(DISPENSE_MOTOR_ADVANCE);
-    motor_controller.setMaxSpeed(1000); // TODO: tune this speed
+    
+    // motor_controller.setTargetPosition(DISPENSE_MOTOR_ADVANCE);
+    motor_controller.setPwm(-0.8);
+    
     shutdownTimer.reset();
     button.disable();
 }
 
 void action_slow_dispense(void)
 {
-    event_timer_set_timeout(2000); // allow for additional 2 seconds
+    motor_controller.setMaxSpeed(DISPENSE_SLOW_SPEED);
+    event_timer_set_timeout(DISPENSE_SLOW_TIMEOUT); // allow for additional 2 seconds
     event_timer_reset();
     led.setPattern(YELLOW_BLINK);
     // led_ring.setPatternSingleColor(PDL_Addressable_LED::PATTERN_RED_MARQUEE_CIRCULAR);
-    motor_controller.setTargetPosition(DISPENSE_MOTOR_ADVANCE);
-    motor_controller.setMaxSpeed(500); // TODO: tune this speed
+    // motor_controller.setTargetPosition(DISPENSE_MOTOR_ADVANCE);
+    motor_controller.setPwm(-0.7);
+    shutdownTimer.reset();
+    button.disable();
+}
+
+void action_hold(void)
+{
+    // motor_controller.setMaxSpeed(DISPENSE_SLOW_SPEED);
+    event_timer_set_timeout(HOLD_TIMEOUT); // allow for additional 2 seconds
+    event_timer_reset();
+    led.setPattern(YELLOW_BLINK);
+    // delay(200);
+    // led_ring.setPatternSingleColor(PDL_Addressable_LED::PATTERN_RED_MARQUEE_CIRCULAR);
+    // motor_controller.setTargetPosition(DISPENSE_MOTOR_ADVANCE);
+    // motor_controller.setPwm(-0.7);
+    shutdownTimer.reset();
+    button.disable();
+}
+
+void action_high_dispense(void)
+{
+    // motor_controller.setMaxSpeed(DISPENSE_HIGH_SPEED);
+    event_timer_set_timeout(DISPENSE_HIGH_TIMEOUT); // allow for additional 2 seconds
+    event_timer_reset();
+    led.setPattern(YELLOW_BLINK);
+    // led_ring.setPatternSingleColor(PDL_Addressable_LED::PATTERN_RED_MARQUEE_CIRCULAR);
+    // motor_controller.setTargetPosition(DISPENSE_MOTOR_ADVANCE);
+    motor_controller.setPwm(-0.9);
     shutdownTimer.reset();
     button.disable();
 }
 
 void action_retract(void)
 {
-    event_timer_set_timeout(2000);
+    motor_controller.setMaxSpeed(RETRACT_SPEED); 
+    event_timer_set_timeout(RETRACT_TIMEOUT);
     event_timer_reset();
     led.setPattern(BLUE_CONST);
     led_ring.setPatternSingleColor(PDL_Addressable_LED::PATTERN_BLUE_MARQUEE_CIRCULAR);
-    motor_controller.setTargetPosition(0);
+    motor_controller.setTargetPosition(-500);
     shutdownTimer.reset();
     button.disable();
 }
@@ -251,9 +293,10 @@ void setup()
     Serial.println("Init Motor Controller");
     motor_controller.setPositionLimits(20000, -20000);
     motor_controller.setGain(0.002, 0, 0);
+    // motor_controller.setGain(0.005);
     motor_controller.setStallThreshold(50, 0.5);
     motor_controller.setDebug(MotorController::DEBUG_OFF);
-    motor_controller.setLoopDelay(50);
+    motor_controller.setLoopDelay(MOTOR_LOOP_DELAY_MS);
     motor_controller.setOnMotorStall(cbs_MotorStall);
     motor_controller.setOnTargetReach(cbs_MotorReach);
     motor_controller.start();
@@ -269,8 +312,9 @@ void setup()
 
     Serial.println("Init Drop sensor");
     dropSensor.setDebug(WaterdropSensor::DEBUG_INFO);
-    dropSensor.setCrossCountTrigThreshold(4);
+    dropSensor.setCrossCountTrigThreshold(3);
     dropSensor.setDropDetectedCallback(cbs_DropDetected, nullptr);
+    dropSensor.setSensorDataCrossingCallback(ApdsEventCallback);
     dropSensor.init();
     Serial.println("Drop sensor init done");
 
@@ -278,8 +322,12 @@ void setup()
     tiltSensor.setDebugStatus(IMU_DEBUG_STATUS_NONE);
     tiltSensor.setVerticalThresholds(-10, 10, -10, 10);
     tiltSensor.setLoopDelay(100);
-    tiltSensor.setTiltedCallback(cbs_DeviceTilted);
-    tiltSensor.setLevelCallback(cbs_DeviceVertical);
+    if (tilt_limit_flag) 
+    {
+      tiltSensor.setTiltedCallback(cbs_DeviceTilted);
+      tiltSensor.setLevelCallback(cbs_DeviceVertical);
+    }
+    
     tiltSensor.init();
     Serial.println("Tilt sensor init done");
 
@@ -294,6 +342,8 @@ void setup()
     SetReadyAction(action_ready);
     SetDispensingAction(action_dispense);
     SetDispensingSlowAction(action_slow_dispense);
+    SetDispensingHighAction(action_high_dispense);
+    SetHoldAction(action_hold);
     SetReleasingAction(action_release);
     SetRetractingAction(action_retract);
     StateMachine_Init();
@@ -325,6 +375,8 @@ void loop()
             action_init();
         }
     }
+
+    // Serial.println(motor_controller.getCurrentPosition());
 
     delay(1000);
 }

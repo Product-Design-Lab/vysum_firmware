@@ -19,16 +19,26 @@ static const StateTransition_t stateTransitions[] = {
     {STATE_READY,           EVENT_LONG_PRESS,       STATE_RELEASING},
     {STATE_DISPENSING,      EVENT_DISTANCE_REACHED, STATE_RETRACTING},
     {STATE_DISPENSING,      EVENT_DROP_DETECTED,    STATE_RETRACTING},
-    {STATE_DISPENSING,      EVENT_MOTOR_STALL,      STATE_RETRACTING},
+    {STATE_DISPENSING,      EVENT_MOTOR_STALL,      STATE_DISPENSING_HIGH},
     {STATE_DISPENSING,      EVENT_TIMEOUT,          STATE_RETRACTING},
     {STATE_DISPENSING,      EVENT_DROP_SUSPENDING,  STATE_DISPENSING_SLOW},
     {STATE_DISPENSING_SLOW, EVENT_DISTANCE_REACHED, STATE_RETRACTING},
     {STATE_DISPENSING_SLOW, EVENT_DROP_DETECTED,    STATE_RETRACTING},
-    {STATE_DISPENSING_SLOW, EVENT_MOTOR_STALL,      STATE_RETRACTING},
+    // {STATE_DISPENSING_SLOW, EVENT_MOTOR_STALL,      STATE_RETRACTING},
+    {STATE_DISPENSING_SLOW, EVENT_MOTOR_STALL,      STATE_HOLD},
     {STATE_DISPENSING_SLOW, EVENT_TIMEOUT,          STATE_RETRACTING},
-    {STATE_RETRACTING,      EVENT_DISTANCE_REACHED, STATE_IDLE},
-    {STATE_RETRACTING,      EVENT_TIMEOUT,          STATE_IDLE},
-    {STATE_RETRACTING,      EVENT_MOTOR_STALL,      STATE_IDLE},
+    
+    {STATE_HOLD,            EVENT_DROP_DETECTED,    STATE_RETRACTING},
+    {STATE_HOLD,            EVENT_TIMEOUT,          STATE_DISPENSING_HIGH},
+
+    {STATE_DISPENSING_HIGH,      EVENT_DISTANCE_REACHED, STATE_RETRACTING},
+    {STATE_DISPENSING_HIGH,      EVENT_DROP_DETECTED,    STATE_RETRACTING},
+    {STATE_DISPENSING_HIGH,      EVENT_MOTOR_STALL,      STATE_RETRACTING},
+    {STATE_DISPENSING_HIGH,      EVENT_TIMEOUT,          STATE_RETRACTING},
+    
+    {STATE_RETRACTING,      EVENT_DISTANCE_REACHED, STATE_GRIPPING},
+    {STATE_RETRACTING,      EVENT_TIMEOUT,          STATE_GRIPPING},
+    {STATE_RETRACTING,      EVENT_MOTOR_STALL,      STATE_GRIPPING},
     {STATE_RELEASING,       EVENT_MOTOR_STALL,      STATE_INIT},
     {STATE_RELEASING,       EVENT_TIMEOUT,          STATE_INIT},
     };
@@ -65,6 +75,12 @@ static void printState(State_t state)
         break;
     case STATE_DISPENSING_SLOW:
         printf("Current state: DISPENSING_SLOW\n");
+        break;
+    case STATE_HOLD:
+        printf("Current state: HOLD\n");
+        break;
+    case STATE_DISPENSING_HIGH:
+        printf("Current state: DISPENSING_HIGH\n");
         break;
     case STATE_RETRACTING:
         printf("Current state: RETRACTING\n");
@@ -190,6 +206,14 @@ void SetDispensingAction(StateAction_t action)
 void SetDispensingSlowAction(StateAction_t action)
 {
     stateActions[STATE_DISPENSING_SLOW] = action;
+}
+void SetHoldAction(StateAction_t action)
+{
+    stateActions[STATE_HOLD] = action;
+}
+void SetDispensingHighAction(StateAction_t action)
+{
+    stateActions[STATE_DISPENSING_HIGH] = action;
 }
 
 void SetRetractingAction(StateAction_t action)

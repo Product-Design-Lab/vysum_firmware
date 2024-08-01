@@ -11,6 +11,8 @@ typedef enum
     STATE_READY,
     STATE_DISPENSING,
     STATE_DISPENSING_SLOW,
+    STATE_HOLD,
+    STATE_DISPENSING_HIGH,
     STATE_RETRACTING,
     STATE_RELEASING,
     STATE_MAX_STATES // For boundary checking
@@ -49,6 +51,8 @@ void SetIdleAction(StateAction_t action);
 void SetReadyAction(StateAction_t action);
 void SetDispensingAction(StateAction_t action);
 void SetDispensingSlowAction(StateAction_t action);
+void SetHoldAction(StateAction_t action);
+void SetDispensingHighAction(StateAction_t action);
 void SetRetractingAction(StateAction_t action);
 void SetReleasingAction(StateAction_t action);
 
